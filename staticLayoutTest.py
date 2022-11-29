@@ -5,6 +5,8 @@ cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
+#cap = cv2.VideoCapture('opencvTest.mp4')
+
 
 # --- Color Settings
 hsvTreshold = 40
@@ -38,7 +40,7 @@ def do_morphology(mask, medianBlur=True, opening=False, closing=False):
     return mask
 
 def make_Mask_colored(frame, mask):
-    maskColor = cv2.bitwise_and(frame, mask)
+    maskColor = cv2.bitwise_and(frame, frame, mask=mask)
 
     return maskColor
 
@@ -54,6 +56,7 @@ def find_contours(mask):
     return sortedContours
 
 def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,255), boundingRect=True, minAreaRect=False, contourToMask=False):
+    objects = []
     for n in range(start, stop):
         try:
             cnt = sortedContours[n-1][1]
@@ -66,7 +69,8 @@ def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,2
                 cv2.rectangle(drawToFrame,(x,y),(x+w,y+h),color,2)
                 centerX = x + w/2
                 centerY = y + h/2
-                print("contour X, Y: [{}, {}]".format(centerX, centerY))
+                objects.append((centerX, centerY))
+                #print("contour X, Y: [{}, {}]".format(centerX, centerY))
 
             # minArea Rectangle
             if minAreaRect:
@@ -76,6 +80,7 @@ def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,2
                 cv2.drawContours(drawToFrame,[box],0,color,2)
         except IndexError:
             print("IndexError: list index out of range")
+    return objects
 
 
 
@@ -88,40 +93,70 @@ while cap.isOpened():
     if rotate:
         frame = cv2.rotate(frame, cv2.ROTATE_180)
     
+    processedFrame = frame.copy()
     hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)   # convert to hsv
 
+    contourStart = 1
+    contourEnd = 3
     # ---- RED
     maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
     maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
-    #maskRed = make_Mask_colored(frame, maskRed)
     # -- find contours
     sortedContours = find_contours(maskRed)
-    draw_contours(sortedContours, frame, maskRed, 1, 4, (0,0,255), True, False, False)
-    # ----
-
-    # ---- GREEN
-    maskGreen = get_HSVMask(hsvFrame, hsv_green, hsvTreshold)
-    maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
-    #maskGreen = make_Mask_colored(frame, maskGreen)
-    # -- find contours
-    sortedContours = find_contours(maskGreen)
-    draw_contours(sortedContours, frame, maskGreen, 1, 4, (0,255,0), True, False, False)
-    # ----
-
-    # ---- Blue
-    maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
-    maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
-    #maskBlue = make_Mask_colored(frame, maskBlue)
-    # -- find contours
-    sortedContours = find_contours(maskBlue)
-    draw_contours(sortedContours, frame, maskBlue, 1, 4, (255,0,0), True, False, False)
+    objects = draw_contours(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False, False)
     # ----
     
+    if False:
+        # ---- GREEN
+        maskGreen = get_HSVMask(hsvFrame, hsv_green, hsvTreshold)
+        maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
+        # -- find contours
+        sortedContours = find_contours(maskGreen)
+        draw_contours(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,255,0), True, False, False)
+        # ----
+
+        # ---- Blue
+        maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
+        maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
+        # -- find contours
+        sortedContours = find_contours(maskBlue)
+        draw_contours(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (255,0,0), True, False, False)
+        # ----
+
+    # --- bitmaps color
+    maskRed = make_Mask_colored(frame, maskRed)
+    #maskGreen = make_Mask_colored(frame, maskGreen)
+    #maskBlue = make_Mask_colored(frame, maskBlue)
+
+    #colorMask = cv2.add(maskRed, cv2.add(maskGreen, maskBlue))
+    colorMask = maskRed
+
+    
+    # ---- Layout
+    rect_cX, rect_cY, rect_w, rect_h = [300, 200, 200, 150]
+    rect_p1 = (rect_cX - rect_w/2 , rect_cY - rect_h/2)
+    rect_p2 = (rect_cX + rect_w/2 , rect_cY + rect_h/2)
+    rect_p1 = np.array(rect_p1, dtype='int')
+    rect_p2 = np.array(rect_p2, dtype='int')
+    # ---- 
+
+
+    # ---- colission detection
+    if True:
+        #processedImage = np.copy(frame)
+        tresh = 50
+        for centerX, centerY in objects:
+            if (centerX <= rect_cX + rect_w/2 and centerX >= rect_cX - rect_w/2) and (centerY <= rect_cY + rect_h/2 and centerY >= rect_cY - rect_h/2):
+                # in rectangle area
+                cv2.rectangle(processedFrame, rect_p1+(2,2), rect_p2-(2,2), (0,255,0), 2)
+            else:
+                cv2.rectangle(processedFrame, rect_p1, rect_p2, (0,0,255), 2)
+    # ----
 
 
 
-    cv2.imshow('processed', frame)
-    cv2.imshow('mask', maskRed)
+    cv2.imshow('processed', processedFrame)
+    cv2.imshow('mask', colorMask)
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
