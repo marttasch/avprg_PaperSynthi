@@ -76,7 +76,7 @@ while cap.isOpened():
     #first sort the array by area
     sorteddata = sorted(zip(areaArray, contours), key=lambda x: x[0], reverse=True)
     
-    if False:
+    if True:
         # draw n-th areas
         n = 8
         # Initialize empty list
