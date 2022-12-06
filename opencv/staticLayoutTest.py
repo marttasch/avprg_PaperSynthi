@@ -132,7 +132,7 @@ while cap.isOpened():
     colorMask = maskRed
 
     
-    # ---- Layout
+    # ---- set up Layout
     rect_cX, rect_cY, rect_w, rect_h = [300, 200, 200, 150]
     rect_p1 = (rect_cX - rect_w/2 , rect_cY - rect_h/2)
     rect_p2 = (rect_cX + rect_w/2 , rect_cY + rect_h/2)
@@ -144,13 +144,17 @@ while cap.isOpened():
     # ---- colission detection
     if True:
         #processedImage = np.copy(frame)
+        # -- draw Layout
+        cv2.rectangle(processedFrame, rect_p1, rect_p2, (255,255,0), 2)
+        # --
+
+        # -- detect collision
         tresh = 50
         for centerX, centerY in objects:
             if (centerX <= rect_cX + rect_w/2 and centerX >= rect_cX - rect_w/2) and (centerY <= rect_cY + rect_h/2 and centerY >= rect_cY - rect_h/2):
-                # in rectangle area
+                # in rectangle area / colission detected
                 cv2.rectangle(processedFrame, rect_p1+(2,2), rect_p2-(2,2), (0,255,0), 2)
-            else:
-                cv2.rectangle(processedFrame, rect_p1, rect_p2, (0,0,255), 2)
+        # --
     # ----
 
 
