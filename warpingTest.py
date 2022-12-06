@@ -24,7 +24,7 @@ points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
 points2_tuple = np.float32([points2])
 
 
-def mouseCallback(event, x, y, flags, param):
+def mouseCallbackWarping(event, x, y, flags, param):
     #print('mouseCallback')
     if event == cv2.EVENT_LBUTTONDOWN:
         print('mouse Click')
@@ -47,7 +47,7 @@ def mouseCallback(event, x, y, flags, param):
 
 
 cv2.namedWindow('input')
-cv2.setMouseCallback('input', mouseCallback)
+cv2.setMouseCallback('input', mouseCallbackWarping)
 
 while cap.isOpened():
 
