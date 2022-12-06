@@ -1,11 +1,14 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture(1)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+imgWidth = 1280
+imgHeight = 720
 
-#cap = cv2.VideoCapture('opencvTest.mp4')
+#cap = cv2.VideoCapture(1)
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
+
+cap = cv2.VideoCapture('opencvTest.mp4')
 
 
 # --- Color Settings
@@ -14,6 +17,18 @@ hsv_orange = [14, 38, 59]
 hsv_red = [349, 62, 39]
 hsv_green = [160, 84, 12]
 hsv_blue = [227, 72, 13]
+# ----
+
+# --- -Points for warping
+inPoint1 = [0, 100]
+inPoint2 = [700, 260]
+inPoint3 = [0, 700]
+inPoint4 = [700, 400]
+
+points2 = np.float32([[0, 200], [600, 0], [0, 700], [1000, 700]])
+
+points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
+points2_tuple = np.float32([points2])
 # ----
 
 def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
@@ -82,7 +97,34 @@ def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,2
             print("IndexError: list index out of range")
     return objects
 
+def mouseCallbackWarping(event, x, y, flags, param):
+    #print('mouseCallback')
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print('mouse Click')
+        if (x <= imgWidth/2) and (y <= imgHeight/2):
+            (inPoint1[0], inPoint1[1]) = (x, y)
+            print("Mouseclick Area 1: ", x, y)
+            return inPoint1
+        if (x >= imgWidth/2) and (y <= imgHeight/2):
+            (inPoint2[0], inPoint2[1]) = (x, y)
+            print("Mouseclick Area 2: ", x, y)
+            return inPoint2
+        if (x <= imgWidth/2) and (y >= imgHeight/2):
+            (inPoint3[0], inPoint3[1]) = (x, y)
+            print("Mouseclick Area 3: ", x, y)
+            return inPoint3
+        if (x >= imgWidth/2) and (y >= imgHeight/2):
+            (inPoint4[0], inPoint4[1]) = (x, y)
+            print("Mouseclick Area 4: ", x, y)
+            return inPoint4
 
+
+# --- setup Window
+winNameInput = 'input'
+
+cv2.namedWindow(winNameInput)
+cv2.setMouseCallback(winNameInput, mouseCallbackWarping)
+# ---
 
 frameCount = 0
 # Play Video
@@ -92,9 +134,39 @@ while cap.isOpened():
     rotate = True
     if rotate:
         frame = cv2.rotate(frame, cv2.ROTATE_180)
+
+    # ---- set up Layout
+    rect_cX, rect_cY, rect_w, rect_h = [300, 200, 200, 150]
+    rect_p1 = (rect_cX - rect_w/2 , rect_cY - rect_h/2)
+    rect_p2 = (rect_cX + rect_w/2 , rect_cY + rect_h/2)
+    rect_p1 = np.array(rect_p1, dtype='int')
+    rect_p2 = np.array(rect_p2, dtype='int')
+
+    outPoint1 = [rect_cX - rect_w/2 , rect_cY - rect_h/2]
+    outPoint2 = [rect_cX + rect_w/2 , rect_cY - rect_h/2]
+    outPoint3 = [rect_cX - rect_w/2 , rect_cY + rect_h/2]
+    outPoint4 = [rect_cX + rect_w/2 , rect_cY + rect_h/2]
+    # ---- 
+
+    # ---- Warping
+    points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
+    points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
+
+    # -- draw points
+    cv2.circle(frame, (inPoint1[0], inPoint1[1]), 5, (255, 0, 255), -1)
+    cv2.circle(frame, (inPoint2[0], inPoint2[1]), 5, (255, 0, 255), -1)
+    cv2.circle(frame, (inPoint3[0], inPoint3[1]), 5, (255, 0, 255), -1)
+    cv2.circle(frame, (inPoint4[0], inPoint4[1]), 5, (255, 0, 255), -1)
+    # -- 
+
+    #applying getPerspectiveTransform() function to transform the perspective of the given source image to the corresponding points in the destination image
+    resultWarping = cv2.getPerspectiveTransform(points1_tuple, points2_tuple)
+    #applying warpPerspective() function to fit the size of the resulting image from getPerspectiveTransform() function to the size of source image
+    warpedImage = cv2.warpPerspective(frame, resultWarping, (imgWidth, imgHeight))
+    # ----
     
-    processedFrame = frame.copy()
-    hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)   # convert to hsv
+    processedFrame = warpedImage.copy()
+    hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)   # convert to hsv
 
     contourStart = 1
     contourEnd = 3
@@ -132,13 +204,7 @@ while cap.isOpened():
     colorMask = maskRed
 
     
-    # ---- set up Layout
-    rect_cX, rect_cY, rect_w, rect_h = [300, 200, 200, 150]
-    rect_p1 = (rect_cX - rect_w/2 , rect_cY - rect_h/2)
-    rect_p2 = (rect_cX + rect_w/2 , rect_cY + rect_h/2)
-    rect_p1 = np.array(rect_p1, dtype='int')
-    rect_p2 = np.array(rect_p2, dtype='int')
-    # ---- 
+
 
 
     # ---- colission detection
@@ -158,7 +224,7 @@ while cap.isOpened():
     # ----
 
 
-
+    cv2.imshow(winNameInput, frame)
     cv2.imshow('processed', processedFrame)
     cv2.imshow('mask', colorMask)
 
