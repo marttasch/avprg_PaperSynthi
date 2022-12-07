@@ -4,11 +4,11 @@ import numpy as np
 imgWidth = 1280
 imgHeight = 720
 
-#cap = cv2.VideoCapture(1)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
+cap = cv2.VideoCapture(1)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
-cap = cv2.VideoCapture('opencvTest.mp4')
+#cap = cv2.VideoCapture('opencvTest.mp4')
 
 
 # --- Color Settings
@@ -30,6 +30,72 @@ points2 = np.float32([[0, 200], [600, 0], [0, 700], [1000, 700]])
 points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
 points2_tuple = np.float32([points2])
 # ----
+
+# ----- Class
+class Layout:
+    def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiNote):
+        if type not in ('fader', 'button'):
+            print('Layout Element cant be created: Wrong type')
+            return
+        elif type == 'button':
+            self.type = type
+            self.pressed = False
+        elif type == 'fader':
+            self.type = type
+            self.value = 0
+
+        self.name = name
+        self.position = (cx, cy)
+        self.size = (width, heigth)
+        self.color = colorRGB
+        self.note = midiNote
+
+        self.calcRectPoints()
+    
+    # #### Getter
+    def getName(self):
+        print("LayoutName: ", self.function)
+
+    # #### Setter
+
+
+    # #########
+    # ######### Functions
+    # ## main func
+    def update(self, imageToDrawOn, objects):
+        self.draw(imageToDrawOn)
+        self.checkCollision(imageToDrawOn, objects)
+        #self.playmidi()
+
+    # ## init
+    def calcRectPoints(self):
+        self.p_ul = np.array((self.position[0] - self.size[0]/2, self.position[1] - self.size[1]/2), dtype='int')
+        self.p_ur = np.array((self.position[0] + self.size[0]/2, self.position[1] - self.size[1]/2), dtype='int')
+        self.p_bl = np.array((self.position[0] - self.size[0]/2, self.position[1] + self.size[1]/2), dtype='int')
+        self.p_br = np.array((self.position[0] + self.size[0]/2, self.position[1] + self.size[1]/2), dtype='int')
+
+    # ## all functions
+    def draw(self, frame):
+        cv2.rectangle(frame, self.p_ur, self.p_bl, self.color, 2)
+        return
+
+    def checkCollision(self, frame, objects):
+        #tresh = 50
+        for centerX, centerY in objects:
+            if (centerX <= self.position[0] + self.size[0]/2 and centerX >= self.position[0] - self.size[0]/2) and (centerY <= self.position[1] + self.size[1]/2 and centerY >= self.position[1] - self.size[1]/2):
+                # in rectangle area / colission detected
+                #cv2.rectangle(processedFrame, rect_p1+(2,2), rect_p2-(2,2), (0,255,0), 2)
+                if self.type == 'button':
+                    self.pressed = True
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
+                    print(self.name, ': pressed',)
+        
+
+    def playMidi():
+        return
+
+# -----
+
 
 def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
     target_color_HSV = np.array([hsvColor[0]/2, hsvColor[1]/100*255, hsvColor[2]/100*255])  # convert to HSV value range
@@ -70,7 +136,7 @@ def find_contours(mask):
     sortedContours = sorted(zip(areaArray, contours), key=lambda x: x[0], reverse=True)
     return sortedContours
 
-def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,255), boundingRect=True, minAreaRect=False, contourToMask=False):
+def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,255), boundingRect=True, contourToMask=False):
     objects = []
     for n in range(start, stop):
         try:
@@ -87,12 +153,6 @@ def draw_contours(sortedContours, drawToFrame, mask, start, stop, color=(255,0,2
                 objects.append((centerX, centerY))
                 #print("contour X, Y: [{}, {}]".format(centerX, centerY))
 
-            # minArea Rectangle
-            if minAreaRect:
-                rect = cv2.minAreaRect(cnt)
-                box = cv2.boxPoints(rect)
-                box = np.int0(box)
-                cv2.drawContours(drawToFrame,[box],0,color,2)
         except IndexError:
             print("IndexError: list index out of range")
     return objects
@@ -119,6 +179,13 @@ def mouseCallbackWarping(event, x, y, flags, param):
             return inPoint4
 
 
+layout = []
+# --- set up Layout
+layout.append(Layout('mode', 'button', 50, 50, 50, 50, (255,255,0), 'note'))
+layout.append(Layout('Play', 'button', 150, 150, 50, 50, (255,255,0), 'note'))
+# ---
+
+
 # --- setup Window
 winNameInput = 'input'
 
@@ -142,73 +209,82 @@ while cap.isOpened():
     rect_p1 = np.array(rect_p1, dtype='int')
     rect_p2 = np.array(rect_p2, dtype='int')
 
-    outPoint1 = [rect_cX - rect_w/2 , rect_cY - rect_h/2]
-    outPoint2 = [rect_cX + rect_w/2 , rect_cY - rect_h/2]
-    outPoint3 = [rect_cX - rect_w/2 , rect_cY + rect_h/2]
-    outPoint4 = [rect_cX + rect_w/2 , rect_cY + rect_h/2]
+    #outPoint1 = [rect_cX - rect_w/2 , rect_cY - rect_h/2]
+    #outPoint2 = [rect_cX + rect_w/2 , rect_cY - rect_h/2]
+    #outPoint3 = [rect_cX - rect_w/2 , rect_cY + rect_h/2]
+    #outPoint4 = [rect_cX + rect_w/2 , rect_cY + rect_h/2]
+
     # ---- 
 
+
     # ---- Warping
-    points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
-    points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
-
-    # -- draw points
-    cv2.circle(frame, (inPoint1[0], inPoint1[1]), 5, (255, 0, 255), -1)
-    cv2.circle(frame, (inPoint2[0], inPoint2[1]), 5, (255, 0, 255), -1)
-    cv2.circle(frame, (inPoint3[0], inPoint3[1]), 5, (255, 0, 255), -1)
-    cv2.circle(frame, (inPoint4[0], inPoint4[1]), 5, (255, 0, 255), -1)
-    # -- 
-
-    #applying getPerspectiveTransform() function to transform the perspective of the given source image to the corresponding points in the destination image
-    resultWarping = cv2.getPerspectiveTransform(points1_tuple, points2_tuple)
-    #applying warpPerspective() function to fit the size of the resulting image from getPerspectiveTransform() function to the size of source image
-    warpedImage = cv2.warpPerspective(frame, resultWarping, (imgWidth, imgHeight))
-    # ----
-    
-    processedFrame = warpedImage.copy()
-    hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)   # convert to hsv
-
-    contourStart = 1
-    contourEnd = 3
-    # ---- RED
-    maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
-    maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
-    # -- find contours
-    sortedContours = find_contours(maskRed)
-    objects = draw_contours(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False, False)
-    # ----
-    
     if False:
-        # ---- GREEN
-        maskGreen = get_HSVMask(hsvFrame, hsv_green, hsvTreshold)
-        maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
-        # -- find contours
-        sortedContours = find_contours(maskGreen)
-        draw_contours(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,255,0), True, False, False)
-        # ----
+        points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
+        points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
 
-        # ---- Blue
-        maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
-        maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
-        # -- find contours
-        sortedContours = find_contours(maskBlue)
-        draw_contours(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (255,0,0), True, False, False)
-        # ----
+        # -- draw points
+        cv2.circle(frame, (inPoint1[0], inPoint1[1]), 5, (255, 0, 255), -1)
+        cv2.circle(frame, (inPoint2[0], inPoint2[1]), 5, (255, 0, 255), -1)
+        cv2.circle(frame, (inPoint3[0], inPoint3[1]), 5, (255, 0, 255), -1)
+        cv2.circle(frame, (inPoint4[0], inPoint4[1]), 5, (255, 0, 255), -1)
+        # -- 
 
-    # --- bitmaps color
-    maskRed = make_Mask_colored(frame, maskRed)
-    #maskGreen = make_Mask_colored(frame, maskGreen)
-    #maskBlue = make_Mask_colored(frame, maskBlue)
+        #applying getPerspectiveTransform() function to transform the perspective of the given source image to the corresponding points in the destination image
+        resultWarping = cv2.getPerspectiveTransform(points1_tuple, points2_tuple)
+        #applying warpPerspective() function to fit the size of the resulting image from getPerspectiveTransform() function to the size of source image
+        warpedImage = cv2.warpPerspective(frame, resultWarping, (imgWidth, imgHeight))
+    # ----
 
-    #colorMask = cv2.add(maskRed, cv2.add(maskGreen, maskBlue))
-    colorMask = maskRed
-
-    
-
-
-
-    # ---- colission detection
+    # --------- Detect Objects
     if True:
+        # how many contours to take
+        contourStart = 1
+        contourEnd = 3
+
+        processedFrame = frame.copy()
+        hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)   # convert to hsv
+
+        # ---- RED
+        maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
+        maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
+        # -- find contours
+        sortedContours = find_contours(maskRed)
+        objects = detect_objects(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False)
+        # ----
+        
+        if False:
+            # ---- GREEN
+            maskGreen = get_HSVMask(hsvFrame, hsv_green, hsvTreshold)
+            maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
+            # -- find contours
+            sortedContours = find_contours(maskGreen)
+            draw_contours(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,255,0), True, False, False)
+            # ----
+
+            # ---- Blue
+            maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
+            maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
+            # -- find contours
+            sortedContours = find_contours(maskBlue)
+            draw_contours(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (255,0,0), True, False, False)
+            # ----
+
+        # --- bitmaps color
+        maskRed = make_Mask_colored(frame, maskRed)
+        #maskGreen = make_Mask_colored(frame, maskGreen)
+        #maskBlue = make_Mask_colored(frame, maskBlue)
+
+        #colorMask = cv2.add(maskRed, cv2.add(maskGreen, maskBlue))
+        colorMask = maskRed
+    # --------- 
+
+    # ---- update Layout
+    for n in range(0, len(layout)):
+        layout[n].update(processedFrame, objects)
+    # ----
+
+    # --------- colission detection
+    if False:
         #processedImage = np.copy(frame)
         # -- draw Layout
         cv2.rectangle(processedFrame, rect_p1, rect_p2, (255,255,0), 2)
@@ -226,7 +302,7 @@ while cap.isOpened():
 
     cv2.imshow(winNameInput, frame)
     cv2.imshow('processed', processedFrame)
-    cv2.imshow('mask', colorMask)
+    #cv2.imshow('mask', colorMask)
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
