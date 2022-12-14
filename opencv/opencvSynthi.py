@@ -4,11 +4,11 @@ import numpy as np
 imgWidth = 1280
 imgHeight = 720
 
-#cap = cv2.VideoCapture(1)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
+cap = cv2.VideoCapture(1)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
-cap = cv2.VideoCapture('opencvTest.mp4')
+#cap = cv2.VideoCapture('opencvTest.mp4')
 
 
 # --- Color Settings
@@ -17,18 +17,6 @@ hsv_orange = [14, 38, 59]
 hsv_red = [349, 62, 39]
 hsv_green = [160, 84, 12]
 hsv_blue = [227, 72, 13]
-# ----
-
-# --- -Points for warping
-inPoint1 = [0, 100]
-inPoint2 = [700, 260]
-inPoint3 = [0, 700]
-inPoint4 = [700, 400]
-
-points2 = np.float32([[0, 200], [600, 0], [0, 700], [1000, 700]])
-
-points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
-points2_tuple = np.float32([points2])
 # ----
 
 # ----- Class
@@ -178,6 +166,20 @@ def mouseCallbackWarping(event, x, y, flags, param):
             print("Mouseclick Area 4: ", x, y)
             return inPoint4
 
+# --- -Points for warping
+inPoint1 = [0, 100]
+inPoint2 = [700, 260]
+inPoint3 = [0, 700]
+inPoint4 = [700, 400]
+
+outPoint1 = [31, 31]
+outPoint2 = [1245, 71]
+outPoint3 = [31, 692]
+outPoint4 = [1245, 692]
+
+points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
+points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
+# ----
 
 layout = []
 # --- set up Layout
@@ -241,9 +243,9 @@ while cap.isOpened():
 
 
     # ---- Warping
-    if False:
+    if True:
         points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
-        points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
+        #points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
 
         # -- draw points
         cv2.circle(frame, (inPoint1[0], inPoint1[1]), 5, (255, 0, 255), -1)
@@ -264,8 +266,8 @@ while cap.isOpened():
         contourStart = 1
         contourEnd = 3
 
-        processedFrame = frame.copy()
-        hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)   # convert to hsv
+        processedFrame = warpedImage.copy()
+        hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)   # convert to hsv
 
         # ---- RED
         maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
