@@ -1,7 +1,8 @@
 [x] do not use areas, if inside bigger area
 [ ] layout anlegen
+--> edit in illustrator
 [x] colission detection
-[ ] camera warpen und auf Layout mappen
+[x] camera warpen und auf Layout mappen
     --> Ecken/Punkte erkennen.
 
 warpen
