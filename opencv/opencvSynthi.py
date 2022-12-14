@@ -22,13 +22,13 @@ hsv_blue = [227, 72, 13]
 # ----- Class
 class Layout:
     def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiNote):
-        if type not in ('fader', 'button'):
+        if type not in ('faderH', 'faderV', 'button'):
             print('Layout Element cant be created: Wrong type')
             return
         elif type == 'button':
             self.type = type
             self.pressed = False
-        elif type == 'fader':
+        elif type in ('faderH', 'faderV'):
             self.type = type
             self.value = 0
 
@@ -77,11 +77,27 @@ class Layout:
                     self.pressed = True
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
                     print(self.name, ': pressed',)
-                if self.type == 'fader':
+                if self.type == 'faderH':
+                    # get value
                     value = centerX - (self.position[0] - self.size[0]/2)
                     value = value / (self.size[0]) * 100
                     self.value = value
+                    # draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
+                    cv2.line(frame,np.int16((centerX, self.position[1]+self.size[1]/2)), np.int16((centerX, self.position[1]-self.size[1]/2)), (0,0,0), 3)
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((centerX + 5, self.position[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    # print in console
+                    print(self.name, ' = ', self.value)
+                if self.type == 'faderV':
+                    # get value
+                    value = centerY - (self.position[1] - self.size[1]/2)
+                    value = value / (self.size[1]) * 100
+                    self.value = value
+                    # draw visual feedback
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
+                    cv2.line(frame,np.int16((self.position[0]-self.size[0]/2, centerY)), np.int16((self.position[0]+self.size[0]/2, centerY)), (0,0,0), 3)
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.position[0]-self.size[0]/2, centerY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    # print in console
                     print(self.name, ' = ', self.value)
         
 
@@ -196,19 +212,19 @@ layout.append(Layout('Modus Drums', 'button', 188, 81, 100, 100, (255,255,0), 'n
 layout.append(Layout('Play', 'button', 188, 188, 100, 100, (255,255,0), 'note'))
 layout.append(Layout('Reverb', 'button', 188, 295, 100, 100, (255,255,0), 'note'))
 layout.append(Layout('Modus Sounds', 'button', 295, 81, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Pitch', 'fader', 76, 527, 90, 330, (90,90,90), 'note'))
-layout.append(Layout('Bend', 'fader', 173, 527, 90, 330, (90,90,90), 'note'))
-layout.append(Layout('Gain', 'fader', 270, 527, 90, 330, (90,90,90), 'note'))
+layout.append(Layout('Pitch', 'faderV', 76, 527, 90, 330, (90,90,90), 'note'))
+layout.append(Layout('Bend', 'faderV', 173, 527, 90, 330, (90,90,90), 'note'))
+layout.append(Layout('Gain', 'faderV', 270, 527, 90, 330, (90,90,90), 'note'))
 #Oszi1
-layout.append(Layout('Volume', 'fader', 584, 107, 420, 73, (205,100,205), 'note'))
-layout.append(Layout('LFO', 'fader', 584, 180, 420, 73, (205,100,205), 'note'))
+layout.append(Layout('Volume', 'faderH', 584, 107, 420, 73, (205,100,205), 'note'))
+layout.append(Layout('LFO', 'faderH', 584, 180, 420, 73, (205,100,205), 'note'))
 layout.append(Layout('Sinus', 'button', 427, 266, 105, 100, (205,100,205), 'note'))
 layout.append(Layout('Triangle', 'button', 532, 266, 105, 100, (205,100,205), 'note'))
 layout.append(Layout('Sawtooth', 'button', 637, 266, 105, 100, (205,100,205), 'note'))
 layout.append(Layout('Rectangle', 'button', 742,266, 105, 100, (205,100,205), 'note'))
 #Oszi2
-layout.append(Layout('Volume', 'fader', 1035, 107, 420, 73, (205,100,100), 'note'))
-layout.append(Layout('LFO', 'fader', 1035, 180, 420, 73, (205,100,100), 'note'))
+layout.append(Layout('Volume', 'faderH', 1035, 107, 420, 73, (205,100,100), 'note'))
+layout.append(Layout('LFO', 'faderH', 1035, 180, 420, 73, (205,100,100), 'note'))
 layout.append(Layout('Sinus', 'button', 878, 266, 105, 100, (205,100,100), 'note'))
 layout.append(Layout('Triangle', 'button', 983, 266, 105, 100, (205,100,100), 'note'))
 layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), 'note'))
