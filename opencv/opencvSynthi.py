@@ -76,6 +76,7 @@ class Layout:
                 if self.type == 'button':
                     self.pressed = True
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
+                    cv2.putText(frame, self.name, np.int16((self.position[0]-self.size[0]/2+10, self.position[1]+10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
                     print(self.name, ': pressed',)
                 if self.type == 'faderH':
                     # get value
@@ -195,7 +196,7 @@ inPoint3 = [0, 700]
 inPoint4 = [700, 400]
 
 outPoint1 = [31, 31]
-outPoint2 = [1245, 71]
+outPoint2 = [1245, 31]
 outPoint3 = [31, 692]
 outPoint4 = [1245, 692]
 
