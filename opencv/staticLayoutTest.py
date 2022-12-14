@@ -4,11 +4,11 @@ import numpy as np
 imgWidth = 1280
 imgHeight = 720
 
-cap = cv2.VideoCapture(1)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
+#cap = cv2.VideoCapture(1)
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
-#cap = cv2.VideoCapture('opencvTest.mp4')
+cap = cv2.VideoCapture('opencvTest.mp4')
 
 
 # --- Color Settings
@@ -181,8 +181,31 @@ def mouseCallbackWarping(event, x, y, flags, param):
 
 layout = []
 # --- set up Layout
-layout.append(Layout('mode', 'button', 50, 50, 50, 50, (255,255,0), 'note'))
-layout.append(Layout('Play', 'button', 150, 150, 50, 50, (255,255,0), 'note'))
+layout.append(Layout('mode keys', 'button', 81, 81, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Record', 'button', 81, 188, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Distortion', 'button', 81, 295, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Modus Drums', 'button', 188, 81, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Play', 'button', 188, 188, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Reverb', 'button', 188, 295, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Modus Sounds', 'button', 295, 81, 100, 100, (255,255,0), 'note'))
+layout.append(Layout('Pitch', 'fader', 76, 527, 90, 330, (90,90,90), 'note'))
+layout.append(Layout('Bend', 'fader', 173, 527, 90, 330, (90,90,90), 'note'))
+layout.append(Layout('Gain', 'fader', 270, 527, 90, 330, (90,90,90), 'note'))
+#Oszi1
+layout.append(Layout('Volume', 'fader', 584, 107, 420, 73, (205,100,205), 'note'))
+layout.append(Layout('LFO', 'fader', 584, 180, 420, 73, (205,100,205), 'note'))
+layout.append(Layout('Sinus', 'button', 427, 266, 105, 100, (205,100,205), 'note'))
+layout.append(Layout('Triangle', 'button', 532, 266, 105, 100, (205,100,205), 'note'))
+layout.append(Layout('Sawtooth', 'button', 637, 266, 105, 100, (205,100,205), 'note'))
+layout.append(Layout('Rectangle', 'button', 742,266, 105, 100, (205,100,205), 'note'))
+#Oszi2
+layout.append(Layout('Volume', 'fader', 1035, 107, 420, 73, (205,100,100), 'note'))
+layout.append(Layout('LFO', 'fader', 1035, 180, 420, 73, (205,100,100), 'note'))
+layout.append(Layout('Sinus', 'button', 878, 266, 105, 100, (205,100,100), 'note'))
+layout.append(Layout('Triangle', 'button', 983, 266, 105, 100, (205,100,100), 'note'))
+layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), 'note'))
+layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), 'note'))
+
 # ---
 
 
