@@ -77,6 +77,12 @@ class Layout:
                     self.pressed = True
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
                     print(self.name, ': pressed',)
+                if self.type == 'fader':
+                    value = centerX - (self.position[0] - self.size[0]/2)
+                    value = value / (self.size[0]) * 100
+                    self.value = value
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
+                    print(self.name, ' = ', self.value)
         
 
     def playMidi():
