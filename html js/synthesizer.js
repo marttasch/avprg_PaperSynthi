@@ -5,6 +5,7 @@ const oscillators = [];
 
 let noteFreq = null;
 
+
 const keys = document.getElementsByClassName("key");
 const waveform = document.getElementsByClassName("waveform");
 
@@ -112,11 +113,15 @@ function createNoteTable() {
 
 noteFreq = createNoteTable();
 
-
 for (let i = 0; i < keys.length; i++) {
   console.log(keys[i].getAttribute("octave"), keys[i].id);
   keys[i].addEventListener("mousedown", function() {startNote(keys[i].getAttribute("octave"), i, keys[i].id)});
   keys[i].addEventListener("mouseup", function() {stopNote(keys[i].getAttribute("octave"), i, keys[i].id)});
+}
+
+for (let i = 0; i < waveform.length; i++) {
+  console.log(waveform[i].id);
+  waveform[i].addEventListener("click", function() {getWaveform(waveform[i].id)});
 }
 
 gain.connect(context.destination);
@@ -126,12 +131,19 @@ document.querySelector("#gainSlider").addEventListener("input", function (e) {
   gain.gain.value = gainValue;
 });
 
+let currentWaveform = null;
+
+function getWaveform(selectedWaveform) {
+  console.log(selectedWaveform);
+  currentWaveform = selectedWaveform;
+}
 
 
 function startNote(octave, note, name) {
   oscillators[note] = context.createOscillator();
   console.log(noteFreq[octave][name]);
   oscillators[note].frequency.value = noteFreq[octave][name];
+  oscillators[note].type = currentWaveform;
   oscillators[note].connect(gain);
   oscillators[note].start(context.currentTime);
 }
