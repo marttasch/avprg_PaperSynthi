@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
+from cvzone.HandTrackingModule import HandDetector
 
+# ####### Settings #######
 imgWidth = 1280
 imgHeight = 720
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
@@ -16,6 +18,9 @@ rotateImage180 = True
 contourStart = 1
 contourEnd = 3
 
+# ####### Settings end #######
+
+handDetector = HandDetector(detectionCon=0.8, maxHands=2)
 
 # --- Color Settings
 hsvTreshold = 40
@@ -199,6 +204,39 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
         
     return objects
 
+def detect_hands(frame):
+    # Find the hand and its landmarks
+    hands, frame = handDetector.findHands(frame)  # with draw
+    lmList1 = []
+    lmList2 = []
+    
+    if hands:
+        # Hand 1
+        hand1 = hands[0]
+        lmList1 = hand1["lmList"]  # List of 21 Landmark points
+        bbox1 = hand1["bbox"]  # Bounding box info x,y,w,h
+        centerPoint1 = hand1['center']  # center of the hand cx,cy
+        handType1 = hand1["type"]  # Handtype Left or Right
+
+        #fingers1 = handDetector.fingersUp(hand1)
+
+        if len(hands) == 2:
+            # Hand 2
+            hand2 = hands[1]
+            lmList2 = hand2["lmList"]  # List of 21 Landmark points
+            bbox2 = hand2["bbox"]  # Bounding box info x,y,w,h
+            centerPoint2 = hand2['center']  # center of the hand cx,cy
+            handType2 = hand2["type"]  # Hand Type "Left" or "Right"
+
+            #fingers2 = handDetector.fingersUp(hand2)
+
+            # Find Distance between two Landmarks. Could be same hand or different hands
+            length, info, img = handDetector.findDistance(lmList1[8], lmList2[8], frame)  # with draw
+            # length, info = detector.findDistance(lmList1[8], lmList2[8])  # with draw
+
+        return lmList1, lmList2
+
+
 def mouseCallbackWarping(event, x, y, flags, param):
     """Callback Function for mouse input on input window"""
 
@@ -296,7 +334,7 @@ cv2.setMouseCallback(winNameInput, mouseCallbackWarping)
 # ------------------------
 while cap.isOpened():
     ret, frame = cap.read()
-
+    
     # rotate frame
     if rotateImage180:
         frame = cv2.rotate(frame, cv2.ROTATE_180)
@@ -317,11 +355,19 @@ while cap.isOpened():
         resultWarping = cv2.getPerspectiveTransform(points1_tuple, points2_tuple)
         warpedImage = cv2.warpPerspective(frame, resultWarping, (imgWidth, imgHeight))
     # ----
+    processedFrame = warpedImage.copy()
+
+    # ---- Detect Hands
+    if True:
+        handsLandmarkList = detect_hands(processedFrame)
+        
+
+    # ----
 
     # ---- Detect Objects
     if True:
         # copy frame and convert to hsv
-        processedFrame = warpedImage.copy()
+        
         hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)
 
         # ---- RED
@@ -350,7 +396,7 @@ while cap.isOpened():
             # ----
 
         # --- bitmaps color
-        maskRed = make_Mask_colored(frame, maskRed)
+        #maskRed = make_Mask_colored(frame, maskRed)
         #maskGreen = make_Mask_colored(frame, maskGreen)
         #maskBlue = make_Mask_colored(frame, maskBlue)
 
