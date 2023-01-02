@@ -74,8 +74,8 @@ class Layout:
     def checkCollision(self, frame, objects):
 
         # check for every object, if object center is inside rectangle
-        for centerX, centerY in objects:
-            if (centerX <= self.center[0] + self.size[0]/2 and centerX >= self.center[0] - self.size[0]/2) and (centerY <= self.center[1] + self.size[1]/2 and centerY >= self.center[1] - self.size[1]/2):
+        for obj_cX, obj_cY, obj_w, obj_h in objects:
+            if (obj_cX <= self.center[0] + self.size[0]/2 and obj_cX >= self.center[0] - self.size[0]/2) and (obj_cY <= self.center[1] + self.size[1]/2 and obj_cY >= self.center[1] - self.size[1]/2):
                 # colission detected / in rectangle area
                 
                 if self.type == 'button':
@@ -91,28 +91,28 @@ class Layout:
                 
                 if self.type == 'faderH':
                     # get value
-                    value = centerX - (self.center[0] - self.size[0]/2)
+                    value = obj_cX - (self.center[0] - self.size[0]/2)
                     value = value / (self.size[0]) * 100
                     self.value = value
 
                     # draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
-                    cv2.line(frame,np.int16((centerX, self.center[1]+self.size[1]/2)), np.int16((centerX, self.center[1]-self.size[1]/2)), (0,0,0), 3)
-                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((centerX + 5, self.center[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    cv2.line(frame,np.int16((obj_cX, self.center[1]+self.size[1]/2)), np.int16((obj_cX, self.center[1]-self.size[1]/2)), (0,0,0), 3)
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((obj_cX + 5, self.center[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
                     
                     # print in console
                     print(self.name, ' = ', self.value)
                 
                 if self.type == 'faderV':
                     # get value
-                    value = centerY - (self.center[1] - self.size[1]/2)
+                    value = obj_cY - (self.center[1] - self.size[1]/2)
                     value = value / (self.size[1]) * 100
                     self.value = value
 
                     # draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
-                    cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, centerY)), np.int16((self.center[0]+self.size[0]/2, centerY)), (0,0,0), 3)
-                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.center[0]-self.size[0]/2, centerY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, obj_cY)), np.int16((self.center[0]+self.size[0]/2, obj_cY)), (0,0,0), 3)
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.center[0]-self.size[0]/2, obj_cY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
                     
                     # print in console
                     print(self.name, ' = ', self.value)
@@ -189,9 +189,9 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
                 x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(drawToFrame,(x,y),(x+w,y+h),color,2)
                 
-                centerX = x + w/2
-                centerY = y + h/2
-                objects.append((centerX, centerY))
+                cX = x + w/2
+                cY = y + h/2
+                objects.append((cX, cY, w, h))
 
         except IndexError:
             # no Objects available
