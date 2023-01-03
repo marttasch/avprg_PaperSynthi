@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
 from cvzone.HandTrackingModule import HandDetector
+import matplotlib.path as mpltPath
 
 # ####### Settings #######
 imgWidth = 1280
 imgHeight = 720
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
@@ -30,12 +31,12 @@ hsv_green = [160, 84, 12]
 hsv_blue = [227, 72, 13]
 # ----
 
-# ----- Class
+# ----- Class Layout
 class Layout:
     def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiNote):
         if type not in ('faderH', 'faderV', 'button'):
-            print('Layout Element cant be created: Wrong type')
-            return
+            raise Exception('Layout Element cant be created: Wrong type')
+
         elif type == 'button':
             self.type = type
             self.pressed = False
@@ -128,6 +129,61 @@ class Layout:
 
 # -----
 
+# ---- Class Key
+class Key:
+    def __init__(self, name, type, vertices, colorRGB, midiNote):
+        if type not in ('white', 'black'):
+            raise Exception('Key cant be created: Wrong Type')
+        
+        else:
+            self.type = type
+
+        self.name = name
+        self.color = colorRGB
+        self.note = midiNote
+        self.pressed = False
+
+        vertices = np.array(vertices)
+        pts = vertices.reshape((-1,1,2)) 
+        self.points = pts
+        self.vertices = vertices
+
+    def update(self, imageToDrawon, fingertipObjects):
+        self.draw(imageToDrawon)
+        if fingertipObjects:
+            self.checkCollision(imageToDrawon, fingertipObjects)
+        #self.playMidi()
+        return
+
+    def draw(self, frame):
+
+        if self.pressed:
+            cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)
+        else:
+            cv2.polylines(frame, [self.vertices], isClosed=False, color=(0,255,0), thickness=2)
+
+        return
+
+    def checkCollision(self, frame, objects):
+
+        if objects:
+            for obj_cX, obj_cY, obj_w, obj_h in objects:
+
+                fingerXY = np.array([obj_cX, obj_cY]).reshape(1, 2)
+                path = mpltPath.Path(self.vertices)
+
+                inside = path.contains_points(fingerXY)
+
+                if inside:
+                    self.pressed = True
+                    print('Key ', self.name, ' pressed.')
+                else:
+                    self.pressed = False
+                return
+        
+    
+    def playMidi():
+        return
 
 def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
     """Create Bitmask of given HSV-Frame and HSV-Color"""
@@ -209,7 +265,7 @@ def detect_hands(frame):
     hands, frame = handDetector.findHands(frame)  # with draw
     lmList1 = []
     lmList2 = []
-    
+
     if hands:
         # Hand 1
         hand1 = hands[0]
@@ -234,7 +290,7 @@ def detect_hands(frame):
             length, info, img = handDetector.findDistance(lmList1[8], lmList2[8], frame)  # with draw
             # length, info = detector.findDistance(lmList1[8], lmList2[8])  # with draw
 
-        return lmList1, lmList2
+        return lmList1 #, lmList2
 
 
 def mouseCallbackWarping(event, x, y, flags, param):
@@ -315,7 +371,13 @@ layout.append(Layout('Sinus', 'button', 878, 266, 105, 100, (205,100,100), 'note
 layout.append(Layout('Triangle', 'button', 983, 266, 105, 100, (205,100,100), 'note'))
 layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), 'note'))
 layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), 'note'))
+# ----
 
+
+polygon = np.array([[400, 300], [400, 600], [500, 600], [500, 450], [450, 450], [450, 300], [400, 300]], np.int32)
+# ---- set up keys
+keys = []
+keys.append(Key('C', 'white', polygon, (255, 0, 255), 'note'))
 # ----
 
 
@@ -359,9 +421,21 @@ while cap.isOpened():
 
     # ---- Detect Hands
     if True:
-        handsLandmarkList = detect_hands(processedFrame)
+        handsLandmarkList = detect_hands(frame)
         
+        fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # black mask for fingertip
+        fingertipObjects = []
+        if handsLandmarkList:
+            cv2.circle(fingertipMask, (handsLandmarkList[8][0], handsLandmarkList[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
+            
+
+            warpedFingertipBitmask = cv2.warpPerspective(fingertipMask, resultWarping, (imgWidth, imgHeight))    # warp fingertip bitmask
+            warpedFingertipBitmask = do_morphology(warpedFingertipBitmask, medianBlur=True, opening=True, closing=True)
+
+            # find fingertip in bitmask
+            fingertipContour = find_contours(warpedFingertipBitmask)
+            fingertipObjects = detect_objects(fingertipContour, processedFrame, warpedFingertipBitmask, 0, 3, (0,125,255), True, True)
     # ----
 
     # ---- Detect Objects
@@ -407,6 +481,11 @@ while cap.isOpened():
     # ---- update Layout
     for n in range(0, len(layout)):
         layout[n].update(processedFrame, objects)
+    # ----
+
+    # ---- update Keys
+    for n in range(0, len(keys)):
+        keys[n].update(processedFrame, fingertipObjects)
     # ----
 
     cv2.imshow(winNameInput, frame)
