@@ -36,18 +36,53 @@
             </div>
         </div>
 
-        <div class="osc1">
+        <div class="osc1">Oscillator 1
             <div id="gainContainer"> Gain
                 <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="gainSlider">
-                <span id="gainOutput">100%</span>
+                <span id="gainOutput">50%</span>
             </div>
-            <div id="waveformContainer"> Waveform
+            <div id="lfoContainer"> LFO
+                <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="lfoSlider">
+                <span id="lfoOutput">50%</span>
+            </div>
+            <div id="waveformContainer"> 
                 <button class="waveform" id="sine">Sine</button>
                 <button class="waveform" id="triangle">Triangle</button>
                 <button class="waveform" id="sawtooth">Sawtooth</button>
                 <button class="waveform" id="square">Square</button>
             </div>
         </div>
+        <div class="osc2"> Oscillator 2
+            <div id="gainContainer"> Gain
+                <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="gainSlider">
+                <span id="gainOutput">50%</span>
+            </div>
+            <div id="lfoContainer"> LFO
+                <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="lfoSlider">
+                <span id="lfoOutput">50%</span>
+            </div>
+            <div id="waveformContainer">
+                <button class="waveform" id="sine">Sine</button>
+                <button class="waveform" id="triangle">Triangle</button>
+                <button class="waveform" id="sawtooth">Sawtooth</button>
+                <button class="waveform" id="square">Square</button>
+            </div>
+        </div>
+        <div class="pitch"> 
+            <div id="name">Pitch</div> 
+            <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="pitchSlider">
+            <span id="pitchOutput">50%</span>
+        </div>
+        <div class="bend"> 
+            <div id="name">Bend</div> 
+            <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="bendSlider">
+            <span id="bendOutput">50%</span>
+        </div>    
+        <div class="mainGain"> 
+            <div id="name">Gain</div> 
+            <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="mainGainSlider">
+            <span id="mainGainOutput">50%</span>
+        </div>    
         <script src="synthesizer.js"></script>
     </body>
 </html>
