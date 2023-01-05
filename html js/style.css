@@ -45,7 +45,7 @@ html, body {
 
 .white {
     height: 21.88rem;
-    width: 5rem;
+    width: 4rem;
     z-index: 1;
     border-left: 1px solid hsl(0, 0%, 73%);
     border-bottom: 1px solid hsl(0, 0%, 73%);
@@ -59,7 +59,7 @@ html, body {
 
 .black {
     height: 13.3rem;
-    width: 3rem;
+    width: 2rem;
     margin: 0 0 0 -1rem;
     z-index: 2;
     border: 1px solid black;
@@ -71,7 +71,7 @@ html, body {
 }
 
 .offset {
-    margin: 0 0 0 -3rem;
+    margin: 0 0 0 -1rem;
   }
 
   .osc1 {
@@ -140,7 +140,7 @@ html, body {
   }
   .pitch{
     position: fixed;
-    top: 525px;
+    top: 535px;
     left: -134px;
     transform:rotate(-90deg);
     font-weight: bold;
@@ -159,7 +159,7 @@ html, body {
   }
   .bend{
     position: fixed;
-    top: 525px;
+    top: 535px;
     left: -36px;
     transform:rotate(-90deg);
     font-weight: bold;
@@ -175,7 +175,7 @@ html, body {
   }
   .mainGain{
     position: fixed;
-    top: 525px;
+    top: 535px;
     left: 60px;
     transform:rotate(-90deg);
     font-weight: bold;
@@ -187,4 +187,52 @@ html, body {
   }
   .mainGain input{
     width: 330px;
+  }
+  .ButtonContainer{
+    position: fixed;
+    top: 31px;
+    left: 31px;
+  }  
+  .modiButton{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-left: 7px;
+  
+  }
+  .recordPlay{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-top: 7px;
+    margin-left: 7px;
+  }
+  #distortionReverbContainer{
+    position: fixed;
+    top: 245px;
+    left: 31px;
+  }
+  .distortionReverb{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-left: 7px;
   }

@@ -71,18 +71,33 @@
         <div class="pitch"> 
             <div id="name">Pitch</div> 
             <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="pitchSlider">
-            <span id="pitchOutput">50%</span>
+            <span id="pitchOutput"></span>
         </div>
         <div class="bend"> 
             <div id="name">Bend</div> 
             <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="bendSlider">
-            <span id="bendOutput">50%</span>
+            <span id="bendOutput"></span>
         </div>    
         <div class="mainGain"> 
             <div id="name">Gain</div> 
             <input type="range" min="0.0" max="1.0" step="0.01" value="0.5" class="slider" id="mainGainSlider">
-            <span id="mainGainOutput">50%</span>
-        </div>    
+            <span id="mainGainOutput"></span>
+        </div> 
+        <div class="ButtonContainer"> 
+            <div id="modiButtonContainer">
+                <button class="modiButton" id="Keys">Keys</button>
+                <button class="modiButton" id="Drums">Drums</button>
+                <button class="modiButton" id="Sounds">Sounds</button>
+            </div>
+            <div id="recordPlayContainer">
+                <button class="recordPlay" id="Record">Record</button>
+                <button class="recordPlay" id="Play">Play</button>
+            </div>
+            <div id="distortionReverbContainer">
+                <button class="distortionReverb" id="Distortion">Distortion</button>
+                <button class="distortionReverb" id="Reverb">Reverb</button>
+            </div>
+        </div>   
         <script src="synthesizer.js"></script>
     </body>
 </html>
