@@ -158,9 +158,23 @@ class Key:
     def draw(self, frame):
 
         if self.pressed:
-            cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)
+            # filled overlay
+            alpha = 0.6   # opacity
+            overlay = frame.copy()
+            cv2.fillPoly(overlay, [self.vertices], (0,255,255))   # filled polygon
+            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)   # transparent overlay
+            cv2.polylines(frame, [self.vertices], isClosed=False, color=(0,255,255), thickness=2)   # border
         else:
-            cv2.polylines(frame, [self.vertices], isClosed=False, color=(0,255,0), thickness=2)
+            if self.type == 'black':
+                alpha = 0.2
+            else:
+                alpha = 0.1
+
+            overlay = frame.copy()
+            cv2.fillPoly(overlay, [self.vertices], self.color)
+            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)
+
+        cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)
 
         return
 
@@ -374,10 +388,63 @@ layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), '
 # ----
 
 
-polygon = np.array([[400, 300], [400, 600], [500, 600], [500, 450], [450, 450], [450, 300], [400, 300]], np.int32)
 # ---- set up keys
 keys = []
-keys.append(Key('C', 'white', polygon, (255, 0, 255), 'note'))
+# 1st octave white
+polygon = np.array([[345, 342], [345, 692], [410, 692], [410, 585], [387, 585], [387, 342], [345, 342]], np.int32)
+keys.append(Key('C', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[433, 342], [433, 585], [410, 585], [410, 692], [473, 692], [473, 585], [451, 585], [451, 342], [433, 342]], np.int32)
+keys.append(Key('D', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[497, 342], [497, 585], [473, 585], [473, 692], [538, 692], [538, 342], [497, 342]], np.int32)
+keys.append(Key('E', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[538, 342], [538, 692], [603, 692], [603, 585], [580, 585], [580, 342], [538, 342]], np.int32)
+keys.append(Key('F', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[626, 342], [626, 585], [603, 585], [603, 692], [666, 692], [666, 585], [644, 585], [644, 342], [626, 342]], np.int32)
+keys.append(Key('G', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[690, 342], [690, 585], [666, 585], [666, 692], [730, 692], [730, 585], [708, 585], [708, 342], [690, 342]], np.int32)
+keys.append(Key('A', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[754, 342], [754, 585], [730, 585], [730, 692], [795, 692], [795, 342], [754, 342]], np.int32)
+keys.append(Key('H', 'white', polygon, (90, 165, 0), 'note'))
+
+# 1st octave black
+polygon = np.array([[387, 342], [387, 585], [433, 585], [433, 342], [387, 342]], np.int32)
+keys.append(Key('C#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[451, 342], [451, 585], [497, 585], [497, 342], [451, 342]], np.int32)
+keys.append(Key('D#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[580, 342], [580, 585], [626, 585], [626, 342], [580, 342]], np.int32)
+keys.append(Key('F#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[644, 342], [644, 585], [690, 585], [690, 342], [644, 342]], np.int32)
+keys.append(Key('G#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[708, 342], [708, 585], [754, 585], [754, 342], [708, 342]], np.int32)
+keys.append(Key('A#', 'black', polygon, (60, 110, 0), 'note'))
+
+# 2nd octave white
+polygon = np.array([[795, 342], [795, 692], [859, 692], [859, 585], [836, 585], [836, 342], [795, 342]], np.int32)
+keys.append(Key('C1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[882, 342], [882, 585], [859, 585], [859, 692], [923, 692], [923, 585], [901, 585], [901, 342], [882, 342]], np.int32)
+keys.append(Key('D1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[945, 342], [945, 585], [923, 585], [923, 692], [988, 692], [988, 342], [945, 342]], np.int32)
+keys.append(Key('E1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[988, 342], [988, 692], [1052, 692], [1052, 585], [1029, 585], [1029, 342], [988, 342]], np.int32)
+keys.append(Key('F1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[1075, 342], [1075, 585], [1052, 585], [1052, 692], [1116, 692], [1116, 585], [1094, 585], [1094, 342], [1075, 342]], np.int32)
+keys.append(Key('G1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[1139, 342], [1139, 585], [1116, 585], [1116, 692], [1180, 692], [1180, 585], [1158, 585], [1158, 342], [1139, 342]], np.int32)
+keys.append(Key('A1', 'white', polygon, (90, 165, 0), 'note'))
+polygon = np.array([[1203, 342], [1203, 585], [1180, 585], [1180, 692], [1244, 692], [1244, 342], [1203, 342]], np.int32)
+keys.append(Key('H1', 'white', polygon, (90, 165, 0), 'note'))
+
+# 2nd octave black
+polygon = np.array([[836, 342], [836, 585], [882, 585], [882, 342], [836, 342]], np.int32)
+keys.append(Key('C1#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[901, 342], [901, 585], [945, 585], [945, 342], [901, 342]], np.int32)
+keys.append(Key('D1#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[1029, 342], [1029, 585], [1075, 585], [1075, 342], [1029, 342]], np.int32)
+keys.append(Key('F1#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[1094, 342], [1094, 585], [1139, 585], [1139, 342], [1094, 342]], np.int32)
+keys.append(Key('G1#', 'black', polygon, (60, 110, 0), 'note'))
+polygon = np.array([[1158, 342], [1158, 585], [1203, 585], [1203, 342], [1158, 342]], np.int32)
+keys.append(Key('A1#', 'black', polygon, (60, 110, 0), 'note'))
 # ----
 
 
@@ -426,6 +493,8 @@ while cap.isOpened():
         fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # black mask for fingertip
         fingertipObjects = []
         if handsLandmarkList:
+            
+            print(handsLandmarkList[8])
             cv2.circle(fingertipMask, (handsLandmarkList[8][0], handsLandmarkList[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
             
