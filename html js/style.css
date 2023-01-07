@@ -1,12 +1,13 @@
-html, body {
-    height: 100%;
-    padding: 0; 
-    margin: 0;
-    background: #c7c5c5;
+*{
+  margin: 0;
+  padding: 0;
+
+  font-family: Helvetica;
 }
 
-body {
-    margin: 0;
+html, body {
+    height: 100%;
+    background: #c7c5c5;
 }
 
 :root {
@@ -23,10 +24,11 @@ body {
     --white-80: hsla(0, 0%, 100%, 0.8);
   }
 
-#keyboardContainer {
-    position: absolute;
-    height: auto; width: auto;
-    right: 9px; bottom: 9px;
+.keyboardContainer {
+    position: fixed;
+    top: 345px;
+    left: 342px;
+    height: 350px; width: 900px;
 }
 
 .white,
@@ -42,8 +44,8 @@ body {
 }
 
 .white {
-    height: 20rem;
-    width: 5.5rem;
+    height: 21.88rem;
+    width: 4rem;
     z-index: 1;
     border-left: 1px solid hsl(0, 0%, 73%);
     border-bottom: 1px solid hsl(0, 0%, 73%);
@@ -56,8 +58,8 @@ body {
 
 
 .black {
-    height: 11.5rem;
-    width: 3.5rem;
+    height: 13.3rem;
+    width: 2rem;
     margin: 0 0 0 -1rem;
     z-index: 2;
     border: 1px solid black;
@@ -69,5 +71,168 @@ body {
 }
 
 .offset {
-    margin: 0 0 0 -3rem;
+    margin: 0 0 0 -1rem;
+  }
+
+  .osc1 {
+    position: fixed;
+    top: 31px;
+    left: 374px;
+    height: auto; width: 420;
+    font-size: 0.7cm;
+    font-weight: bold;
+    border-style: solid;
+    border-color: rgb(205,100,205);
+    background-color: rgba(255,200,255,0.4);
+  }
+  .osc2 {
+    position: fixed;
+    top: 31px;
+    left: 825px;
+    height: auto; width: 420;
+    font-size: 0.7cm;
+    font-weight: bold;
+    border-style: solid;
+    border-color: rgb(205,100,100);
+    background-color: rgba(255,200,200,0.4);
+
+  }
+  .waveformContainer{
+    position: fixed;
+    top: 214px;
+    left: 825px;
+  }  
+  .waveform{
+    float: left;
+    border-style: solid;
+    font-size: 0.5cm;
+    width: 105px;
+    height: 100px;
+    text-align: center;
+  
+  }
+    
+  .osc1 button{
+    border-color: rgb(205,100,205);
+  }
+    
+  .osc2 button{
+    border-color: rgb(205,100,100);
+  }
+  
+  #gainContainer{
+    width: 420px;
+    height: 73px;
+    font-size: medium;
+  }
+  #gainContainer input{
+    width: 420px;
+  }
+  #lfoContainer{
+    width: 420px;
+    height: 73px;
+    font-size: medium;
+  }
+ 
+  #lfoContainer input{
+    width: 420px;
+    
+  }
+  .pitch{
+    position: fixed;
+    top: 535px;
+    left: -134px;
+    transform:rotate(-90deg);
+    font-weight: bold;
+    font-size: 0.45cm;
+  }
+  #name{
+    display: inline-flex;
+    transform:rotate(90deg);
+  }
+  #pitchOutput{
+    display: inline-flex;
+    transform:rotate(90deg);
+  }
+  .pitch input{
+    width: 330px;
+  }
+  .bend{
+    position: fixed;
+    top: 535px;
+    left: -36px;
+    transform:rotate(-90deg);
+    font-weight: bold;
+    font-size: 0.45cm;
+   
+  }
+    #bendOutput{
+    display: inline-flex;
+    transform:rotate(90deg);
+  }
+  .bend input{
+    width: 330px;
+  }
+  .mainGain{
+    position: fixed;
+    top: 535px;
+    left: 60px;
+    transform:rotate(-90deg);
+    font-weight: bold;
+    font-size: 0.45cm;
+  }
+    #mainGainOutput{
+    display: inline-flex;
+    transform:rotate(90deg);
+  }
+  .mainGain input{
+    width: 330px;
+  }
+  .ButtonContainer{
+    position: fixed;
+    top: 31px;
+    left: 31px;
+  }  
+  .modiButton{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-left: 7px;
+  
+  }
+  .recordPlay{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-top: 7px;
+    margin-left: 7px;
+  }
+  #distortionReverbContainer{
+    position: fixed;
+    top: 245px;
+    left: 31px;
+  }
+  .distortionReverb{
+    float: left;
+    border-style: solid;
+    border-color: rgb(255,255,0);
+    background-color: rgba(255,255,200,0.4);
+    font-size: 0.5cm;
+    font-weight: bold;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    margin-left: 7px;
   }

@@ -1,7 +1,23 @@
 const context = new AudioContext();
-let gain = context.createGain();
+let Osc1Gain = context.createGain();
+let masterGain = context.createGain();
+let lfo = context.createOscillator();
+let lfoGain = context.createGain();
+
+let attack = 0.1;
+let release = 0.1;
+
+let currentWaveform = "sine";
 
 const oscillators = [];
+
+lfo.frequency.value = 6;
+lfoGain.gain.value = 0.05;
+lfo.start(context.currentTime);
+lfo.connect(lfoGain);
+
+masterGain.gain.value = 1; 
+masterGain.connect(context.destination);
 
 let noteFreq = null;
 
@@ -124,27 +140,31 @@ for (let i = 0; i < waveform.length; i++) {
   waveform[i].addEventListener("click", function() {getWaveform(waveform[i].id)});
 }
 
-gain.connect(context.destination);
+Osc1Gain.connect(context.destination);
 document.querySelector("#gainSlider").addEventListener("input", function (e) {
-  let gainValue = (this.value);
-  document.querySelector("#gainOutput").innerHTML = gainValue*100 + " %";
-  gain.gain.value = gainValue;
+  let gain1Value = (this.value);
+  document.querySelector("#gainOutput").innerHTML = gain1Value*100 + " %";
+  Osc1Gain.gain.value = gain1Value;
 });
-
-let currentWaveform = null;
 
 function getWaveform(selectedWaveform) {
   console.log(selectedWaveform);
   currentWaveform = selectedWaveform;
 }
 
+document.querySelector("#lfoSlider").addEventListener("input", function(e){
+  lfo.frequency.value = this.value;
+  document.querySelector("#lfoOutput").innerHTML = this.value + " Hz";
+});
+
 
 function startNote(octave, note, name) {
   oscillators[note] = context.createOscillator();
   console.log(noteFreq[octave][name]);
   oscillators[note].frequency.value = noteFreq[octave][name];
+  lfoGain.connect(Osc1Gain.gain);
   oscillators[note].type = currentWaveform;
-  oscillators[note].connect(gain);
+  oscillators[note].connect(Osc1Gain);
   oscillators[note].start(context.currentTime);
 }
 
