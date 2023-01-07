@@ -150,8 +150,8 @@ class Key:
 
     def update(self, imageToDrawon, fingertipObjects):
         self.draw(imageToDrawon)
-        if fingertipObjects:
-            self.checkCollision(imageToDrawon, fingertipObjects)
+
+        self.checkCollision(imageToDrawon, fingertipObjects)
         #self.playMidi()
         return
 
@@ -159,6 +159,7 @@ class Key:
 
         if self.pressed:
             # filled overlay
+            print('key', self.name, ' filled, pressed: ', self.pressed)
             alpha = 0.6   # opacity
             overlay = frame.copy()
             cv2.fillPoly(overlay, [self.vertices], (0,255,255))   # filled polygon
@@ -169,7 +170,6 @@ class Key:
                 alpha = 0.2
             else:
                 alpha = 0.1
-
             overlay = frame.copy()
             cv2.fillPoly(overlay, [self.vertices], self.color)
             cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)
@@ -179,7 +179,6 @@ class Key:
         return
 
     def checkCollision(self, frame, objects):
-
         if objects:
             for obj_cX, obj_cY, obj_w, obj_h in objects:
 
@@ -193,7 +192,8 @@ class Key:
                     print('Key ', self.name, ' pressed.')
                 else:
                     self.pressed = False
-                return
+        else:
+            self.pressed = False
         
     
     def playMidi():
@@ -212,17 +212,19 @@ def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
     maskHSV = cv2.inRange(hsvFrame, lowBound, upperBound)
     return maskHSV
 
-def do_morphology(mask, medianBlur=True, opening=False, closing=False):
+def do_morphology(mask, medianBlur=True, opening=False, closing=False, dilation=False):
     """Apply diffrent Types of morphology to given bitmask"""
 
     if medianBlur:
         mask = cv2.medianBlur(mask, 5)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8,8))
     if opening:
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     if closing:
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    if dilation:
+        mask = cv2.dilate(mask, kernel, iterations=3)
     
     return mask
 
@@ -534,10 +536,10 @@ while cap.isOpened():
         if True:
             # ---- Blue
             maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
-            maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
+            maskBlue = do_morphology(maskBlue, medianBlur=True, opening=False, closing=True, dilation=True)
             # -- find contours
             sortedContours = find_contours(maskBlue)
-            objects = detect_objects(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (0,0,255), True, False)
+            objects = detect_objects(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (0,0,255), True, True)
             # ----
 
         # --- bitmaps color
@@ -561,7 +563,7 @@ while cap.isOpened():
 
     cv2.imshow(winNameInput, frame)
     cv2.imshow(winNameProcessed, processedFrame)
-    #cv2.imshow('mask', colorMask)
+    cv2.imshow('mask', colorMask)
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
