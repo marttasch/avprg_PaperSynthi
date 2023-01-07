@@ -16,19 +16,19 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 rotateImage180 = True
 
 # set how many contours to take for object detection
-contourStart = 1
-contourEnd = 3
+contourStart = 0
+contourEnd = 11
 
 # ####### Settings end #######
 
 handDetector = HandDetector(detectionCon=0.8, maxHands=2)
 
 # --- Color Settings
-hsvTreshold = 40
+hsvTreshold = 60
 hsv_orange = [14, 38, 59]
 hsv_red = [349, 62, 39]
 hsv_green = [160, 84, 12]
-hsv_blue = [227, 72, 13]
+hsv_blue = [204, 56, 35]
 # ----
 
 # ----- Class Layout
@@ -513,13 +513,14 @@ while cap.isOpened():
         
         hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)
 
-        # ---- RED
-        maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
-        maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
-        # -- find contours
-        sortedContours = find_contours(maskRed)
-        objects = detect_objects(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False)
-        # ----
+        if False:
+            # ---- RED
+            maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
+            maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
+            # -- find contours
+            sortedContours = find_contours(maskRed)
+            objects = detect_objects(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False)
+            # ----
         
         if False:
             # ---- GREEN
@@ -527,15 +528,16 @@ while cap.isOpened():
             maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
             # -- find contours
             sortedContours = find_contours(maskGreen)
-            draw_contours(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,255,0), True, False, False)
+            objects = detect_objects(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,0,255), True, False)
             # ----
 
+        if True:
             # ---- Blue
             maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
             maskBlue = do_morphology(maskBlue, medianBlur=True, opening=True, closing=True)
             # -- find contours
             sortedContours = find_contours(maskBlue)
-            draw_contours(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (255,0,0), True, False, False)
+            objects = detect_objects(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (0,0,255), True, False)
             # ----
 
         # --- bitmaps color
@@ -544,7 +546,7 @@ while cap.isOpened():
         #maskBlue = make_Mask_colored(frame, maskBlue)
 
         #colorMask = cv2.add(maskRed, cv2.add(maskGreen, maskBlue))
-        colorMask = maskRed
+        colorMask = maskBlue
     # --------- 
 
     # ---- update Layout
