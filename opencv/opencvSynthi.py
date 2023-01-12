@@ -144,14 +144,13 @@ class Key:
         self.pressed = False
 
         vertices = np.array(vertices)
+        self.vertices = vertices
         pts = vertices.reshape((-1,1,2)) 
         self.points = pts
-        self.vertices = vertices
 
     def update(self, imageToDrawon, fingertipObjects):
-        self.draw(imageToDrawon)
-
         self.checkCollision(imageToDrawon, fingertipObjects)
+        self.draw(imageToDrawon)
         #self.playMidi()
         return
 
@@ -176,7 +175,6 @@ class Key:
 
         cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)
 
-        return
 
     def checkCollision(self, frame, objects):
         if objects:
@@ -190,6 +188,7 @@ class Key:
                 if inside:
                     self.pressed = True
                     print('Key ', self.name, ' pressed.')
+                    break
                 else:
                     self.pressed = False
         else:
@@ -286,27 +285,13 @@ def detect_hands(frame):
         # Hand 1
         hand1 = hands[0]
         lmList1 = hand1["lmList"]  # List of 21 Landmark points
-        bbox1 = hand1["bbox"]  # Bounding box info x,y,w,h
-        centerPoint1 = hand1['center']  # center of the hand cx,cy
-        handType1 = hand1["type"]  # Handtype Left or Right
-
-        #fingers1 = handDetector.fingersUp(hand1)
 
         if len(hands) == 2:
             # Hand 2
             hand2 = hands[1]
             lmList2 = hand2["lmList"]  # List of 21 Landmark points
-            bbox2 = hand2["bbox"]  # Bounding box info x,y,w,h
-            centerPoint2 = hand2['center']  # center of the hand cx,cy
-            handType2 = hand2["type"]  # Hand Type "Left" or "Right"
 
-            #fingers2 = handDetector.fingersUp(hand2)
-
-            # Find Distance between two Landmarks. Could be same hand or different hands
-            length, info, img = handDetector.findDistance(lmList1[8], lmList2[8], frame)  # with draw
-            # length, info = detector.findDistance(lmList1[8], lmList2[8])  # with draw
-
-        return lmList1 #, lmList2
+    return lmList1, lmList2
 
 
 def mouseCallbackWarping(event, x, y, flags, param):
@@ -490,19 +475,21 @@ while cap.isOpened():
 
     # ---- Detect Hands
     if True:
-        handsLandmarkList = detect_hands(frame)
+        handLandmarkList1, handLandmarkList2 = detect_hands(frame)
         
         fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # black mask for fingertip
         fingertipObjects = []
-        if handsLandmarkList:
-            
-            print(handsLandmarkList[8])
-            cv2.circle(fingertipMask, (handsLandmarkList[8][0], handsLandmarkList[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
+        if handLandmarkList1:
+            print(handLandmarkList1[8])
+            cv2.circle(fingertipMask, (handLandmarkList1[8][0], handLandmarkList1[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
-            
+            if handLandmarkList2:
+                print(handLandmarkList2[8])
+                cv2.circle(fingertipMask, (handLandmarkList2[8][0], handLandmarkList2[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
             warpedFingertipBitmask = cv2.warpPerspective(fingertipMask, resultWarping, (imgWidth, imgHeight))    # warp fingertip bitmask
-            warpedFingertipBitmask = do_morphology(warpedFingertipBitmask, medianBlur=True, opening=True, closing=True)
+            warpedFingertipBitmask = do_morphology(warpedFingertipBitmask, medianBlur=True, opening=False, closing=True)
+            cv2.imshow('fingermask', warpedFingertipBitmask)
 
             # find fingertip in bitmask
             fingertipContour = find_contours(warpedFingertipBitmask)
