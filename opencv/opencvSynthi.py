@@ -3,6 +3,11 @@ import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 import matplotlib.path as mpltPath
 
+from rtmidi.midiutil import open_midioutput
+from rtmidi.midiconstants import NOTE_OFF, NOTE_ON
+
+midiout, port_name = open_midioutput(1)
+
 # ####### Settings #######
 imgWidth = 1280
 imgHeight = 720
@@ -63,7 +68,7 @@ class Layout:
     def update(self, imageToDrawOn, objects):
         self.draw(imageToDrawOn)
         self.checkCollision(imageToDrawOn, objects)
-        #self.playmidi()
+        self.playMidi()
 
     # -- init
     def calcRectPoints(self):
@@ -124,7 +129,7 @@ class Layout:
                     print(self.name, ' = ', self.value)
         
 
-    def playMidi():
+    def playMidi(self):
         return
 
 # -----
@@ -141,7 +146,13 @@ class Key:
         self.name = name
         self.color = colorRGB
         self.note = midiNote
+
         self.pressed = False
+        self.prevPressed = False
+        self.stateChange = False
+
+        self.note_on = [0x90, self.note, 112] # channel 1, note, velocity 112
+        self.note_off = [0x80, self.note, 0]
 
         vertices = np.array(vertices)
         self.vertices = vertices
@@ -149,9 +160,16 @@ class Key:
         self.points = pts
 
     def update(self, imageToDrawon, fingertipObjects):
+                
         self.checkCollision(imageToDrawon, fingertipObjects)
+        if self.prevPressed != self.pressed:
+            self.stateChange = True
+        else:
+            self.stateChange = False
+        self.prevPressed = self.pressed
+
         self.draw(imageToDrawon)
-        #self.playMidi()
+        self.playMidi()
         return
 
     def draw(self, frame):
@@ -177,15 +195,21 @@ class Key:
 
 
     def checkCollision(self, frame, objects):
+        #self.prevPressed = self.pressed
         if objects:
             for obj_cX, obj_cY, obj_w, obj_h in objects:
 
                 fingerXY = np.array([obj_cX, obj_cY]).reshape(1, 2)
                 path = mpltPath.Path(self.vertices)
 
-                inside = path.contains_points(fingerXY)
+                pressed = path.contains_points(fingerXY)
 
-                if inside:
+                #if self.prevPressed != pressed:
+                #    self.stateChange = True 
+                #else:
+                #    self.stateChange = False
+
+                if pressed:
                     self.pressed = True
                     print('Key ', self.name, ' pressed.')
                     break
@@ -193,9 +217,17 @@ class Key:
                     self.pressed = False
         else:
             self.pressed = False
+            #self.stateChange = False
         
     
-    def playMidi():
+    def playMidi(self):
+        if self.stateChange:
+            if self.pressed:
+                midiout.send_message(self.note_on)
+                print('send midi: ', self.name, self.note_on)
+            else:
+                midiout.send_message(self.note_off)
+                print('send midi: ', self.name, self.note_off)
         return
 
 def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
@@ -271,7 +303,8 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
 
         except IndexError:
             # no Objects available
-            print("IndexError: list index out of range")
+            #print("IndexError: list index out of range")
+            pass
         
     return objects
 
@@ -379,59 +412,59 @@ layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), '
 keys = []
 # 1st octave white
 polygon = np.array([[345, 342], [345, 692], [410, 692], [410, 585], [387, 585], [387, 342], [345, 342]], np.int32)
-keys.append(Key('C', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('C', 'white', polygon, (90, 165, 0), midiNote=60))
 polygon = np.array([[433, 342], [433, 585], [410, 585], [410, 692], [473, 692], [473, 585], [451, 585], [451, 342], [433, 342]], np.int32)
-keys.append(Key('D', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('D', 'white', polygon, (90, 165, 0), midiNote=62))
 polygon = np.array([[497, 342], [497, 585], [473, 585], [473, 692], [538, 692], [538, 342], [497, 342]], np.int32)
-keys.append(Key('E', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('E', 'white', polygon, (90, 165, 0), midiNote=64))
 polygon = np.array([[538, 342], [538, 692], [603, 692], [603, 585], [580, 585], [580, 342], [538, 342]], np.int32)
-keys.append(Key('F', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('F', 'white', polygon, (90, 165, 0), midiNote=65))
 polygon = np.array([[626, 342], [626, 585], [603, 585], [603, 692], [666, 692], [666, 585], [644, 585], [644, 342], [626, 342]], np.int32)
-keys.append(Key('G', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('G', 'white', polygon, (90, 165, 0), midiNote=67))
 polygon = np.array([[690, 342], [690, 585], [666, 585], [666, 692], [730, 692], [730, 585], [708, 585], [708, 342], [690, 342]], np.int32)
-keys.append(Key('A', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('A', 'white', polygon, (90, 165, 0), midiNote=69))
 polygon = np.array([[754, 342], [754, 585], [730, 585], [730, 692], [795, 692], [795, 342], [754, 342]], np.int32)
-keys.append(Key('H', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('H', 'white', polygon, (90, 165, 0), midiNote=71))
 
 # 1st octave black
 polygon = np.array([[387, 342], [387, 585], [433, 585], [433, 342], [387, 342]], np.int32)
-keys.append(Key('C#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('C#', 'black', polygon, (60, 110, 0), midiNote=61))
 polygon = np.array([[451, 342], [451, 585], [497, 585], [497, 342], [451, 342]], np.int32)
-keys.append(Key('D#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('D#', 'black', polygon, (60, 110, 0), midiNote=63))
 polygon = np.array([[580, 342], [580, 585], [626, 585], [626, 342], [580, 342]], np.int32)
-keys.append(Key('F#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('F#', 'black', polygon, (60, 110, 0), midiNote=66))
 polygon = np.array([[644, 342], [644, 585], [690, 585], [690, 342], [644, 342]], np.int32)
-keys.append(Key('G#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('G#', 'black', polygon, (60, 110, 0), midiNote=68))
 polygon = np.array([[708, 342], [708, 585], [754, 585], [754, 342], [708, 342]], np.int32)
-keys.append(Key('A#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('A#', 'black', polygon, (60, 110, 0), midiNote=70))
 
 # 2nd octave white
 polygon = np.array([[795, 342], [795, 692], [859, 692], [859, 585], [836, 585], [836, 342], [795, 342]], np.int32)
-keys.append(Key('C1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('C1', 'white', polygon, (90, 165, 0), midiNote=72))
 polygon = np.array([[882, 342], [882, 585], [859, 585], [859, 692], [923, 692], [923, 585], [901, 585], [901, 342], [882, 342]], np.int32)
-keys.append(Key('D1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('D1', 'white', polygon, (90, 165, 0), midiNote=74))
 polygon = np.array([[945, 342], [945, 585], [923, 585], [923, 692], [988, 692], [988, 342], [945, 342]], np.int32)
-keys.append(Key('E1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('E1', 'white', polygon, (90, 165, 0), midiNote=76))
 polygon = np.array([[988, 342], [988, 692], [1052, 692], [1052, 585], [1029, 585], [1029, 342], [988, 342]], np.int32)
-keys.append(Key('F1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('F1', 'white', polygon, (90, 165, 0), midiNote=77))
 polygon = np.array([[1075, 342], [1075, 585], [1052, 585], [1052, 692], [1116, 692], [1116, 585], [1094, 585], [1094, 342], [1075, 342]], np.int32)
-keys.append(Key('G1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('G1', 'white', polygon, (90, 165, 0), midiNote=79))
 polygon = np.array([[1139, 342], [1139, 585], [1116, 585], [1116, 692], [1180, 692], [1180, 585], [1158, 585], [1158, 342], [1139, 342]], np.int32)
-keys.append(Key('A1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('A1', 'white', polygon, (90, 165, 0), midiNote=81))
 polygon = np.array([[1203, 342], [1203, 585], [1180, 585], [1180, 692], [1244, 692], [1244, 342], [1203, 342]], np.int32)
-keys.append(Key('H1', 'white', polygon, (90, 165, 0), 'note'))
+keys.append(Key('H1', 'white', polygon, (90, 165, 0), midiNote=83))
 
 # 2nd octave black
 polygon = np.array([[836, 342], [836, 585], [882, 585], [882, 342], [836, 342]], np.int32)
-keys.append(Key('C1#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('C1#', 'black', polygon, (60, 110, 0), midiNote=73))
 polygon = np.array([[901, 342], [901, 585], [945, 585], [945, 342], [901, 342]], np.int32)
-keys.append(Key('D1#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('D1#', 'black', polygon, (60, 110, 0), midiNote=75))
 polygon = np.array([[1029, 342], [1029, 585], [1075, 585], [1075, 342], [1029, 342]], np.int32)
-keys.append(Key('F1#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('F1#', 'black', polygon, (60, 110, 0), midiNote=78))
 polygon = np.array([[1094, 342], [1094, 585], [1139, 585], [1139, 342], [1094, 342]], np.int32)
-keys.append(Key('G1#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('G1#', 'black', polygon, (60, 110, 0), midiNote=80))
 polygon = np.array([[1158, 342], [1158, 585], [1203, 585], [1203, 342], [1158, 342]], np.int32)
-keys.append(Key('A1#', 'black', polygon, (60, 110, 0), 'note'))
+keys.append(Key('A1#', 'black', polygon, (60, 110, 0), midiNote=82))
 # ----
 
 
@@ -480,16 +513,16 @@ while cap.isOpened():
         fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # black mask for fingertip
         fingertipObjects = []
         if handLandmarkList1:
-            print(handLandmarkList1[8])
+            #print(handLandmarkList1[8])
             cv2.circle(fingertipMask, (handLandmarkList1[8][0], handLandmarkList1[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
             if handLandmarkList2:
-                print(handLandmarkList2[8])
+                #print(handLandmarkList2[8])
                 cv2.circle(fingertipMask, (handLandmarkList2[8][0], handLandmarkList2[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
             warpedFingertipBitmask = cv2.warpPerspective(fingertipMask, resultWarping, (imgWidth, imgHeight))    # warp fingertip bitmask
             warpedFingertipBitmask = do_morphology(warpedFingertipBitmask, medianBlur=True, opening=False, closing=True)
-            cv2.imshow('fingermask', warpedFingertipBitmask)
+            #cv2.imshow('fingermask', warpedFingertipBitmask)
 
             # find fingertip in bitmask
             fingertipContour = find_contours(warpedFingertipBitmask)
@@ -550,7 +583,7 @@ while cap.isOpened():
 
     cv2.imshow(winNameInput, frame)
     cv2.imshow(winNameProcessed, processedFrame)
-    cv2.imshow('mask', colorMask)
+    #cv2.imshow('mask', colorMask)
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
