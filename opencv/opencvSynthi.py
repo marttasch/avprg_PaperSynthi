@@ -2,11 +2,9 @@ import cv2
 import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 import matplotlib.path as mpltPath
-
 from rtmidi.midiutil import open_midioutput
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON
 
-midiout, port_name = open_midioutput(1)
 
 # ####### Settings #######
 imgWidth = 1280
@@ -22,10 +20,14 @@ rotateImage180 = True
 
 # set how many contours to take for object detection
 contourStart = 0
-contourEnd = 11
+contourEnd = 15
+
+# midi port
+midiout, port_name = open_midioutput(1)
 
 # ####### Settings end #######
 
+# -------- INIT --------
 handDetector = HandDetector(detectionCon=0.8, maxHands=2)
 
 # --- Color Settings
@@ -34,20 +36,44 @@ hsv_orange = [14, 38, 59]
 hsv_red = [349, 62, 39]
 hsv_green = [160, 84, 12]
 hsv_blue = [204, 56, 35]
+
+hsv_objectColor = hsv_blue   # select color
+# ----
+
+# ---- Points for warping
+
+# map inPoints to outPoints
+outPoint1 = [31, 31]
+outPoint2 = [1245, 31]
+outPoint3 = [31, 692]
+outPoint4 = [1245, 692]
+
+# no warping for now
+inPoint1 = outPoint1
+inPoint2 = outPoint2
+inPoint3 = outPoint3
+inPoint4 = outPoint4
+
+# save as array
+points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
+points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
 # ----
 
 # ----- Class Layout
 class Layout:
     def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiNote):
-        if type not in ('faderH', 'faderV', 'button'):
-            raise Exception('Layout Element cant be created: Wrong type')
+        """Initialize Layout Object"""
 
+        # -- check if Type is admitted
+        if type not in ('faderH', 'faderV', 'button'):   # if wrong type given
+            raise Exception('Layout Element cant be created: Wrong type')
         elif type == 'button':
             self.type = type
             self.pressed = False
         elif type in ('faderH', 'faderV'):
             self.type = type
             self.value = 0
+        # --
 
         self.name = name
         self.center = (cx, cy)
@@ -57,75 +83,64 @@ class Layout:
 
         self.calcRectPoints()
     
-    # -- Getter
-    def getName(self):
-        print("LayoutName: ", self.function)
-
-    # -- Setter
-
     # ---- Functions
-    # -- main func
     def update(self, imageToDrawOn, objects):
+        """Main upate function, needs to be called every frame"""
         self.draw(imageToDrawOn)
         self.checkCollision(imageToDrawOn, objects)
         self.playMidi()
 
-    # -- init
     def calcRectPoints(self):
+        """calculate corner points for rectangle, from center-XY and Witdh/Height"""
         self.p_ul = np.array((self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2), dtype='int')
         self.p_ur = np.array((self.center[0] + self.size[0]/2, self.center[1] - self.size[1]/2), dtype='int')
         self.p_bl = np.array((self.center[0] - self.size[0]/2, self.center[1] + self.size[1]/2), dtype='int')
         self.p_br = np.array((self.center[0] + self.size[0]/2, self.center[1] + self.size[1]/2), dtype='int')
 
-    # -- all functions
     def draw(self, frame):
+        """simple draw border rectangle"""
         cv2.rectangle(frame, self.p_ur, self.p_bl, self.color, 2)
         return
 
     def checkCollision(self, frame, objects):
+        """detect if an object is inside and give visual feedback"""
 
-        # check for every object, if object center is inside rectangle
+        # -- check for every object, if object center is inside rectangle
         for obj_cX, obj_cY, obj_w, obj_h in objects:
             if (obj_cX <= self.center[0] + self.size[0]/2 and obj_cX >= self.center[0] - self.size[0]/2) and (obj_cY <= self.center[1] + self.size[1]/2 and obj_cY >= self.center[1] - self.size[1]/2):
-                # colission detected / in rectangle area
+                # colission detected / object is in rectangle area
                 
                 if self.type == 'button':
-                    # get value
+                    # -- set value
                     self.pressed = True
-                    
-                    # draw visual feedback
+                    # -- draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
                     cv2.putText(frame, self.name, np.int16((self.center[0]-self.size[0]/2+10, self.center[1]+10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
-                    
-                    # print in console
+                    # -- print in console
                     print(self.name, ': pressed',)   # console feedback
                 
-                if self.type == 'faderH':
-                    # get value
+                if self.type == 'faderH':   # if horizontal fader
+                    # -- set value
                     value = obj_cX - (self.center[0] - self.size[0]/2)
                     value = value / (self.size[0]) * 100
                     self.value = value
-
-                    # draw visual feedback
+                    # -- draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
                     cv2.line(frame,np.int16((obj_cX, self.center[1]+self.size[1]/2)), np.int16((obj_cX, self.center[1]-self.size[1]/2)), (0,0,0), 3)
                     cv2.putText(frame, str(np.round(self.value, 1)), np.int16((obj_cX + 5, self.center[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
-                    
-                    # print in console
+                    # -- print in console
                     print(self.name, ' = ', self.value)
                 
-                if self.type == 'faderV':
-                    # get value
+                if self.type == 'faderV':   # if vertical fader
+                    # -- set value
                     value = obj_cY - (self.center[1] - self.size[1]/2)
                     value = value / (self.size[1]) * 100
                     self.value = value
-
-                    # draw visual feedback
+                    # -- draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
                     cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, obj_cY)), np.int16((self.center[0]+self.size[0]/2, obj_cY)), (0,0,0), 3)
                     cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.center[0]-self.size[0]/2, obj_cY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
-                    
-                    # print in console
+                    # -- print in console
                     print(self.name, ' = ', self.value)
         
 
@@ -137,78 +152,85 @@ class Layout:
 # ---- Class Key
 class Key:
     def __init__(self, name, type, vertices, colorRGB, midiNote):
-        if type not in ('white', 'black'):
+        """Initialize Key Object"""
+
+        # -- Check if type is admitted
+        if type not in ('white', 'black'):   # if wrong type given
             raise Exception('Key cant be created: Wrong Type')
-        
         else:
             self.type = type
 
+        # -- set values
         self.name = name
         self.color = colorRGB
         self.note = midiNote
-
+        # -- set states
         self.pressed = False
         self.prevPressed = False
         self.stateChange = False
-
+        # -- set midi notes
         self.note_on = [0x90, self.note, 112] # channel 1, note, velocity 112
         self.note_off = [0x80, self.note, 0]
-
-        vertices = np.array(vertices)
-        self.vertices = vertices
+        # -- set geometry
+        self.vertices = np.array(vertices)
         pts = vertices.reshape((-1,1,2)) 
         self.points = pts
 
+    # ---- Functions
     def update(self, imageToDrawon, fingertipObjects):
-                
+        """Main upate function, needs to be called every frame"""
+
+        # -- check Collision
         self.checkCollision(imageToDrawon, fingertipObjects)
-        if self.prevPressed != self.pressed:
+        # -- check if state has changed
+        if self.prevPressed != self.pressed:   
+            # state changed
             self.stateChange = True
-        else:
+        else:   
+            # state did not change
             self.stateChange = False
-        self.prevPressed = self.pressed
+        self.prevPressed = self.pressed   # remember state for next check
 
         self.draw(imageToDrawon)
         self.playMidi()
-        return
 
     def draw(self, frame):
+        """simple draw border rectangle"""
 
         if self.pressed:
-            # filled overlay
             print('key', self.name, ' filled, pressed: ', self.pressed)
+            
+            # -- visual feedback with transparent filling
             alpha = 0.6   # opacity
             overlay = frame.copy()
             cv2.fillPoly(overlay, [self.vertices], (0,255,255))   # filled polygon
-            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)   # transparent overlay
-            cv2.polylines(frame, [self.vertices], isClosed=False, color=(0,255,255), thickness=2)   # border
-        else:
+            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)   # transparent overlay, add two frames
+           
+        else:   # not pressed
             if self.type == 'black':
-                alpha = 0.2
+                alpha = 0.2   # opacity
             else:
-                alpha = 0.1
+                alpha = 0.1   # opacity
+            # -- draw key with transparent filling
             overlay = frame.copy()
             cv2.fillPoly(overlay, [self.vertices], self.color)
             cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, dst=frame)
 
-        cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)
+        cv2.polylines(frame, [self.vertices], isClosed=False, color=self.color, thickness=2)   # border
 
 
-    def checkCollision(self, frame, objects):
-        #self.prevPressed = self.pressed
-        if objects:
-            for obj_cX, obj_cY, obj_w, obj_h in objects:
+    def checkCollision(self, frame, fingerObjects):
+        """detect if a fingertip is inside and set state"""
 
+        # -- check for every fingertipObject if it is inside Key polygon
+        if fingerObjects:
+            for obj_cX, obj_cY, obj_w, obj_h in fingerObjects:
+                # -- check if fingertip is inside
                 fingerXY = np.array([obj_cX, obj_cY]).reshape(1, 2)
                 path = mpltPath.Path(self.vertices)
-
-                pressed = path.contains_points(fingerXY)
-
-                #if self.prevPressed != pressed:
-                #    self.stateChange = True 
-                #else:
-                #    self.stateChange = False
-
+                pressed = path.contains_points(fingerXY)   # True if fingerXY is inside Key polygon
+                
+                # -- set state
                 if pressed:
                     self.pressed = True
                     print('Key ', self.name, ' pressed.')
@@ -216,12 +238,14 @@ class Key:
                 else:
                     self.pressed = False
         else:
+            # no fingertipObject is available
             self.pressed = False
-            #self.stateChange = False
         
     
     def playMidi(self):
-        if self.stateChange:
+        """send midi noteOn or noteOff depending on state"""
+
+        if self.stateChange:   # if state has changed
             if self.pressed:
                 midiout.send_message(self.note_on)
                 print('send midi: ', self.name, self.note_on)
@@ -230,6 +254,7 @@ class Key:
                 print('send midi: ', self.name, self.note_off)
         return
 
+# ---- Functions
 def get_HSVMask(hsvFrame, hsvColor, hsvTresh):
     """Create Bitmask of given HSV-Frame and HSV-Color"""
 
@@ -287,19 +312,19 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
     for n in range(start, stop):
         try:
             cnt = sortedContours[n-1][1]   # select current contour
+            
+            x,y,w,h = cv2.boundingRect(cnt)
+            cX = x + w/2
+            cY = y + h/2
+            objects.append((cX, cY, w, h))   # append object to list
 
             # if True, draw Contour to mask
             if contourToMask:
                 cv2.drawContours(mask, cnt, -1, color, 2)
             
-            # if True, append object to list and draw bounding rect around object
+            # if True, draw bounding rect around object
             if boundingRect:
-                x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(drawToFrame,(x,y),(x+w,y+h),color,2)
-                
-                cX = x + w/2
-                cY = y + h/2
-                objects.append((cX, cY, w, h))
 
         except IndexError:
             # no Objects available
@@ -309,19 +334,18 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
     return objects
 
 def detect_hands(frame):
+    """Detect Hands in a given frame and return 21 Landmark points as a list per hand"""
     # Find the hand and its landmarks
-    hands, frame = handDetector.findHands(frame)  # with draw
+    hands, frame = handDetector.findHands(frame)  # with draw to frame
     lmList1 = []
     lmList2 = []
 
     if hands:
-        # Hand 1
-        hand1 = hands[0]
+        hand1 = hands[0]   # Hand 1
         lmList1 = hand1["lmList"]  # List of 21 Landmark points
 
         if len(hands) == 2:
-            # Hand 2
-            hand2 = hands[1]
+            hand2 = hands[1]    # Hand 2
             lmList2 = hand2["lmList"]  # List of 21 Landmark points
 
     return lmList1, lmList2
@@ -358,25 +382,6 @@ def mouseCallbackWarping(event, x, y, flags, param):
             print("Mouseclick Area 4: ", x, y)
             return inPoint4
 
-# ---- Points for warping
-
-# map inPoints to outPoints
-outPoint1 = [31, 31]
-outPoint2 = [1245, 31]
-outPoint3 = [31, 692]
-outPoint4 = [1245, 692]
-
-# no warping for now
-inPoint1 = outPoint1
-inPoint2 = outPoint2
-inPoint3 = outPoint3
-inPoint4 = outPoint4
-
-# save as array
-points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
-points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
-# ----
-
 
 # ---- set up Layout
 layout = []
@@ -407,7 +412,6 @@ layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), '
 layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), 'note'))
 # ----
 
-
 # ---- set up keys
 keys = []
 # 1st octave white
@@ -425,7 +429,6 @@ polygon = np.array([[690, 342], [690, 585], [666, 585], [666, 692], [730, 692], 
 keys.append(Key('A', 'white', polygon, (90, 165, 0), midiNote=69))
 polygon = np.array([[754, 342], [754, 585], [730, 585], [730, 692], [795, 692], [795, 342], [754, 342]], np.int32)
 keys.append(Key('H', 'white', polygon, (90, 165, 0), midiNote=71))
-
 # 1st octave black
 polygon = np.array([[387, 342], [387, 585], [433, 585], [433, 342], [387, 342]], np.int32)
 keys.append(Key('C#', 'black', polygon, (60, 110, 0), midiNote=61))
@@ -437,7 +440,6 @@ polygon = np.array([[644, 342], [644, 585], [690, 585], [690, 342], [644, 342]],
 keys.append(Key('G#', 'black', polygon, (60, 110, 0), midiNote=68))
 polygon = np.array([[708, 342], [708, 585], [754, 585], [754, 342], [708, 342]], np.int32)
 keys.append(Key('A#', 'black', polygon, (60, 110, 0), midiNote=70))
-
 # 2nd octave white
 polygon = np.array([[795, 342], [795, 692], [859, 692], [859, 585], [836, 585], [836, 342], [795, 342]], np.int32)
 keys.append(Key('C1', 'white', polygon, (90, 165, 0), midiNote=72))
@@ -453,7 +455,6 @@ polygon = np.array([[1139, 342], [1139, 585], [1116, 585], [1116, 692], [1180, 6
 keys.append(Key('A1', 'white', polygon, (90, 165, 0), midiNote=81))
 polygon = np.array([[1203, 342], [1203, 585], [1180, 585], [1180, 692], [1244, 692], [1244, 342], [1203, 342]], np.int32)
 keys.append(Key('H1', 'white', polygon, (90, 165, 0), midiNote=83))
-
 # 2nd octave black
 polygon = np.array([[836, 342], [836, 585], [882, 585], [882, 342], [836, 342]], np.int32)
 keys.append(Key('C1#', 'black', polygon, (60, 110, 0), midiNote=73))
@@ -467,16 +468,13 @@ polygon = np.array([[1158, 342], [1158, 585], [1203, 585], [1203, 342], [1158, 3
 keys.append(Key('A1#', 'black', polygon, (60, 110, 0), midiNote=82))
 # ----
 
-
-# ---- setup Window
+# --- setup Windows
 winNameInput = 'input'
 winNameProcessed = 'processed'
-
-# setup MouseCallback for Warping Input
+# --- setup MouseCallback for Warping Input
 cv2.namedWindow(winNameInput)
 cv2.setMouseCallback(winNameInput, mouseCallbackWarping)
 # ---
-
 
 # ------------------------
 # ------ Main Loop -------
@@ -484,13 +482,13 @@ cv2.setMouseCallback(winNameInput, mouseCallbackWarping)
 while cap.isOpened():
     ret, frame = cap.read()
     
-    # rotate frame
+    # -- rotate frame
     if rotateImage180:
         frame = cv2.rotate(frame, cv2.ROTATE_180)
 
-    # ---- Warping
+    # ---- warp image to fit Layout
     if True:
-        # convert points from mousCallback to Array
+        # -- convert points from mousCallback to Array
         points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
 
         # -- draw points
@@ -498,98 +496,69 @@ while cap.isOpened():
         cv2.circle(frame, (inPoint2[0], inPoint2[1]), 5, (255, 0, 255), -1)
         cv2.circle(frame, (inPoint3[0], inPoint3[1]), 5, (255, 0, 255), -1)
         cv2.circle(frame, (inPoint4[0], inPoint4[1]), 5, (255, 0, 255), -1)
-        # -- 
 
-        # warp image
+        # -- warp image
         resultWarping = cv2.getPerspectiveTransform(points1_tuple, points2_tuple)
         warpedImage = cv2.warpPerspective(frame, resultWarping, (imgWidth, imgHeight))
     # ----
+
+    # -- copy warped input frame to output frame
     processedFrame = warpedImage.copy()
 
     # ---- Detect Hands
     if True:
-        handLandmarkList1, handLandmarkList2 = detect_hands(frame)
+        handLandmarkList1, handLandmarkList2 = detect_hands(frame)   # get handLandmarks
         
-        fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # black mask for fingertip
         fingertipObjects = []
-        if handLandmarkList1:
-            #print(handLandmarkList1[8])
+        fingertipMask = np.zeros((imgHeight, imgWidth), np.uint8)   # create black mask for fingertip
+        
+        # handLandmarkList[8] --> indexfinger tip
+        # -- draw fingertip on a bitmask to warp it and detect finger again (convert finger XY to warped XY)
+        if handLandmarkList1:   # if hand1
             cv2.circle(fingertipMask, (handLandmarkList1[8][0], handLandmarkList1[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
-            if handLandmarkList2:
-                #print(handLandmarkList2[8])
+            if handLandmarkList2:   # if hand2
                 cv2.circle(fingertipMask, (handLandmarkList2[8][0], handLandmarkList2[8][1]), 3, (255,255,255), -1)   # draw fingertip on bitmask
 
-            warpedFingertipBitmask = cv2.warpPerspective(fingertipMask, resultWarping, (imgWidth, imgHeight))    # warp fingertip bitmask
+            # -- warp fingertip bitmask
+            warpedFingertipBitmask = cv2.warpPerspective(fingertipMask, resultWarping, (imgWidth, imgHeight))    
             warpedFingertipBitmask = do_morphology(warpedFingertipBitmask, medianBlur=True, opening=False, closing=True)
-            #cv2.imshow('fingermask', warpedFingertipBitmask)
 
-            # find fingertip in bitmask
+            # -- find fingertip in warped bitmask
             fingertipContour = find_contours(warpedFingertipBitmask)
             fingertipObjects = detect_objects(fingertipContour, processedFrame, warpedFingertipBitmask, 0, 3, (0,125,255), True, True)
     # ----
 
     # ---- Detect Objects
     if True:
-        # copy frame and convert to hsv
-        
-        hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)
+        hsvFrame = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2HSV)   # copy frame and convert to hsv
 
-        if False:
-            # ---- RED
-            maskRed = get_HSVMask(hsvFrame, hsv_red, hsvTreshold)
-            maskRed = do_morphology(maskRed, medianBlur=True, opening=True, closing=True)
-            # -- find contours
-            sortedContours = find_contours(maskRed)
-            objects = detect_objects(sortedContours, processedFrame, maskRed, contourStart, contourEnd, (0,0,255), True, False)
-            # ----
-        
-        if False:
-            # ---- GREEN
-            maskGreen = get_HSVMask(hsvFrame, hsv_green, hsvTreshold)
-            maskGreen = do_morphology(maskGreen, medianBlur=True, opening=True, closing=True)
-            # -- find contours
-            sortedContours = find_contours(maskGreen)
-            objects = detect_objects(sortedContours, processedFrame, maskGreen, contourStart, contourEnd, (0,0,255), True, False)
-            # ----
-
-        if True:
-            # ---- Blue
-            maskBlue = get_HSVMask(hsvFrame, hsv_blue, hsvTreshold)
-            maskBlue = do_morphology(maskBlue, medianBlur=True, opening=False, closing=True, dilation=True)
-            # -- find contours
-            sortedContours = find_contours(maskBlue)
-            objects = detect_objects(sortedContours, processedFrame, maskBlue, contourStart, contourEnd, (0,0,255), True, True)
-            # ----
-
-        # --- bitmaps color
-        #maskRed = make_Mask_colored(frame, maskRed)
-        #maskGreen = make_Mask_colored(frame, maskGreen)
-        #maskBlue = make_Mask_colored(frame, maskBlue)
-
-        #colorMask = cv2.add(maskRed, cv2.add(maskGreen, maskBlue))
-        colorMask = maskBlue
+        # -- create Bitmask
+        objectMask = get_HSVMask(hsvFrame, hsv_objectColor, hsvTreshold)
+        objectMask = do_morphology(objectMask, medianBlur=True, opening=False, closing=True, dilation=True)
+        # -- find contours and create object list
+        sortedContours = find_contours(objectMask)
+        objects = detect_objects(sortedContours, processedFrame, objectMask, contourStart, contourEnd, (0,0,255), True, True)
     # --------- 
 
     # ---- update Layout
     for n in range(0, len(layout)):
         layout[n].update(processedFrame, objects)
-    # ----
 
     # ---- update Keys
     for n in range(0, len(keys)):
         keys[n].update(processedFrame, fingertipObjects)
-    # ----
 
+    # ---- imgshow
     cv2.imshow(winNameInput, frame)
     cv2.imshow(winNameProcessed, processedFrame)
-    #cv2.imshow('mask', colorMask)
+    #cv2.imshow('mask', objectMask)
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
-        print("break")
+        print("Escape pressed. Exit program...")
         break
-
+# ---- end main loop ----
 
 cap.release()
 cv2.destroyAllWindows()
