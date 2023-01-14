@@ -4,6 +4,7 @@ from cvzone.HandTrackingModule import HandDetector
 import matplotlib.path as mpltPath
 from rtmidi.midiutil import open_midioutput
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON
+import json
 
 
 # ####### Settings #######
@@ -43,6 +44,7 @@ hsv_objectColor = hsv_blue   # select color
 # ---- Points for warping
 
 # map inPoints to outPoints
+# DONT CHANGE --> mapped to Layout
 outPoint1 = [31, 31]
 outPoint2 = [1245, 31]
 outPoint3 = [31, 692]
@@ -53,6 +55,18 @@ inPoint1 = outPoint1
 inPoint2 = outPoint2
 inPoint3 = outPoint3
 inPoint4 = outPoint4
+
+try:
+    with open('opencvSavefile.json', 'r') as openfile:
+        json_object = json.load(openfile)
+    print('Found savefile. Restore corner points.\n')
+    inPoint1 = json_object['cornerTopLeft']
+    inPoint2 = json_object['cornerTopRight']
+    inPoint3 = json_object['cornerBottomLeft']
+    inPoint4 = json_object['cornerBottomRight']
+
+except FileNotFoundError:
+    print('Savefile not found. Continue without savings...\n')
 
 # save as array
 points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
@@ -350,38 +364,44 @@ def detect_hands(frame):
 
     return lmList1, lmList2
 
-
 def mouseCallbackWarping(event, x, y, flags, param):
     """Callback Function for mouse input on input window"""
 
-    # left mousebutton click
+    global click   # set global variable
+
     if event == cv2.EVENT_LBUTTONDOWN:
-        print('mouse Click')
+        # mouse down
+        click = True
 
-        # corner upper left
-        if (x <= imgWidth/2) and (y <= imgHeight/2):
-            (inPoint1[0], inPoint1[1]) = (x, y)
-            print("Mouseclick Area 1: ", x, y)
-            return inPoint1
-        
-        # corner upper right
-        if (x >= imgWidth/2) and (y <= imgHeight/2):
-            (inPoint2[0], inPoint2[1]) = (x, y)
-            print("Mouseclick Area 2: ", x, y)
-            return inPoint2
+    elif event == cv2.EVENT_MOUSEMOVE:
+        if click == True:   # if mouse is clicked set points
+            # corner upper left
+            if (x <= imgWidth/2) and (y <= imgHeight/2):
+                (inPoint1[0], inPoint1[1]) = (x, y)
+                print("Mouseclick Area 1: ", x, y)
+                return inPoint1
+            
+            # corner upper right
+            if (x >= imgWidth/2) and (y <= imgHeight/2):
+                (inPoint2[0], inPoint2[1]) = (x, y)
+                print("Mouseclick Area 2: ", x, y)
+                return inPoint2
 
-        # corner lower left
-        if (x <= imgWidth/2) and (y >= imgHeight/2):
-            (inPoint3[0], inPoint3[1]) = (x, y)
-            print("Mouseclick Area 3: ", x, y)
-            return inPoint3
+            # corner lower left
+            if (x <= imgWidth/2) and (y >= imgHeight/2):
+                (inPoint3[0], inPoint3[1]) = (x, y)
+                print("Mouseclick Area 3: ", x, y)
+                return inPoint3
 
-        # corner lower right
-        if (x >= imgWidth/2) and (y >= imgHeight/2):
-            (inPoint4[0], inPoint4[1]) = (x, y)
-            print("Mouseclick Area 4: ", x, y)
-            return inPoint4
+            # corner lower right
+            if (x >= imgWidth/2) and (y >= imgHeight/2):
+                (inPoint4[0], inPoint4[1]) = (x, y)
+                print("Mouseclick Area 4: ", x, y)
+                return inPoint4
 
+    elif event == cv2.EVENT_LBUTTONUP:
+        # mouse up
+        click = False
 
 # ---- set up Layout
 layout = []
@@ -556,9 +576,22 @@ while cap.isOpened():
 
     # ---- waitkey
     if cv2.waitKey(25) & 0xFF == 27:   # when escap is pressed
-        print("Escape pressed. Exit program...")
+        print("\nEscape pressed. Exit program...")
         break
 # ---- end main loop ----
+
+# --- save file
+print('Saving...')
+cornersXY = {
+    'cornerTopLeft': inPoint1,
+    'cornerTopRight': inPoint2,
+    'cornerBottomLeft': inPoint3,
+    'cornerBottomRight': inPoint4,
+}
+with open('opencvSavefile.json', 'w') as outfile:
+    json.dump(cornersXY, outfile, indent=4)
+print('Done.\n')
+# ---
 
 cap.release()
 cv2.destroyAllWindows()
