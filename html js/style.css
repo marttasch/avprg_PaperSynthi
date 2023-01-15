@@ -117,6 +117,23 @@ html, body {
   .waveform:hover {
     background: rgba(255,255,255,0.2);
   }
+
+  .waveform2{
+    float: left;
+    border-style: solid;
+    font-size: 0.5cm;
+    width: 105px;
+    height: 100px;
+    text-align: center;
+    -webkit-appearance: none;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+    cursor: pointer;
+  }
+  
+  .waveform2:hover {
+    background: rgba(255,255,255,0.2);
+  }
       
   .osc1 button{
     border-color: rgb(205,100,205);

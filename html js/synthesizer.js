@@ -1,20 +1,30 @@
 const context = new AudioContext();
 let Osc1Gain = context.createGain();
+let Osc2Gain = context.createGain();
 let masterGain = context.createGain();
 let lfo = context.createOscillator();
 let lfoGain = context.createGain();
+let lfo2 = context.createOscillator();
+let lfoGain2 = context.createGain();
 
 let attack = 0.1;
 let release = 0.1;
 
-let currentWaveform = "sine";
+let currentWaveform1 = "sine";
+let currentWaveform2 = "sine";
 
-const oscillators = [];
+const oscillators1 = [];
+const oscillators2 = []; 
 
 lfo.frequency.value = 6;
 lfoGain.gain.value = 0.05;
 lfo.start(context.currentTime);
 lfo.connect(lfoGain);
+
+lfo2.frequency.value = 6;
+lfoGain2.gain.value = 0.05;
+lfo2.start(context.currentTime);
+lfo2.connect(lfoGain);
 
 masterGain.gain.value = 1; 
 masterGain.connect(context.destination);
@@ -24,6 +34,7 @@ let noteFreq = null;
 
 const keys = document.getElementsByClassName("key");
 const waveform = document.getElementsByClassName("waveform");
+const waveform2 = document.getElementsByClassName("waveform2");
 
 function createNoteTable() {
     const noteFreq = [];
@@ -129,17 +140,25 @@ function createNoteTable() {
 
 noteFreq = createNoteTable();
 
+// Ton-Ausgabe bei Tastendruck
 for (let i = 0; i < keys.length; i++) {
   console.log(keys[i].getAttribute("octave"), keys[i].id);
   keys[i].addEventListener("mousedown", function() {startNote(keys[i].getAttribute("octave"), i, keys[i].id)});
   keys[i].addEventListener("mouseup", function() {stopNote(keys[i].getAttribute("octave"), i, keys[i].id)});
 }
 
+//Auswahl Waveform für Oszillator 1
 for (let i = 0; i < waveform.length; i++) {
   console.log(waveform[i].id);
   waveform[i].addEventListener("click", function() {getWaveform(waveform[i].id)});
 }
 
+function getWaveform(selectedWaveform1) {
+  console.log(selectedWaveform1);
+  currentWaveform1 = selectedWaveform1;
+}
+
+// Slider für Gain für Oszillator 1
 Osc1Gain.connect(context.destination);
 document.querySelector("#gainSlider").addEventListener("input", function (e) {
   let gain1Value = (this.value);
@@ -147,27 +166,56 @@ document.querySelector("#gainSlider").addEventListener("input", function (e) {
   Osc1Gain.gain.value = gain1Value;
 });
 
-function getWaveform(selectedWaveform) {
-  console.log(selectedWaveform);
-  currentWaveform = selectedWaveform;
-}
-
+// Slider für LFO für Oszillator 1
 document.querySelector("#lfoSlider").addEventListener("input", function(e){
   lfo.frequency.value = this.value;
   document.querySelector("#lfoOutput").innerHTML = this.value + " Hz";
 });
 
+//Auswahl Waveform für Oszillator 2
+for (let i = 0; i < waveform2.length; i++) {
+  console.log(waveform2[i].id);
+  waveform2[i].addEventListener("click", function() {getWaveform(waveform2[i].id)});
+}
+
+function getWaveform(selectedWaveform2) {
+  console.log(selectedWaveform2);
+  currentWaveform2 = selectedWaveform2;
+}
+
+// Slider für Gain für Oszillator 2
+Osc2Gain.connect(context.destination);
+document.querySelector("#gainSlider2").addEventListener("input", function (e) {
+  let gain2Value = (this.value);
+  document.querySelector("#gainOutput2").innerHTML = gain2Value*100 + " %";
+  Osc2Gain.gain.value = gain2Value;
+});
+
+// Slider für LFO für Oszillator 2
+document.querySelector("#lfoSlider2").addEventListener("input", function(e){
+  lfo2.frequency.value = this.value;
+  document.querySelector("#lfoOutput2").innerHTML = this.value + " Hz";
+});
+
 
 function startNote(octave, note, name) {
-  oscillators[note] = context.createOscillator();
+  oscillators1[note] = context.createOscillator();
   console.log(noteFreq[octave][name]);
-  oscillators[note].frequency.value = noteFreq[octave][name];
+  oscillators1[note].frequency.value = noteFreq[octave][name];
   lfoGain.connect(Osc1Gain.gain);
-  oscillators[note].type = currentWaveform;
-  oscillators[note].connect(Osc1Gain);
-  oscillators[note].start(context.currentTime);
+  oscillators1[note].type = currentWaveform1;
+  oscillators1[note].connect(Osc1Gain);
+  oscillators1[note].start(context.currentTime);
+
+  oscillators2[note] = context.createOscillator();
+  oscillators2[note].frequency.value = noteFreq[octave][name];
+  lfoGain2.connect(Osc2Gain.gain);
+  oscillators2[note].type = currentWaveform2;
+  oscillators2[note].connect(Osc2Gain);
+  oscillators2[note].start(context.currentTime);
 }
 
 function stopNote(octave, note, name) {
-  oscillators[note].stop(context.currentTime + 0.005);
+  oscillators1[note].stop(context.currentTime + 0.005);
+  oscillators2[note].stop(context.currentTime + 0.005);
 }
