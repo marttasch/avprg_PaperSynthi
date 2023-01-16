@@ -199,6 +199,7 @@ document.querySelector("#lfoSlider2").addEventListener("input", function(e){
 
 
 function startNote(octave, note, name) {
+  
   oscillators1[note] = context.createOscillator();
   oscillators1[note].frequency.value = noteFreq[octave][name];
   lfoGain.connect(Osc1Gain.gain);

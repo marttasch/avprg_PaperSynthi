@@ -18,36 +18,36 @@ function convertMidi() {
         midiNote[i] = [];
     }
 
-    midiNote[60] = [["C"][0][3]];
-    midiNote[61] = [["C#"][1][3]];
-    midiNote[62] = [["D"][2][3]];
-    midiNote[63] = [["D#"][3][3]];
-    midiNote[64] = [["E"][4][3]];
-    midiNote[65] = [["F"][5][3]];
-    midiNote[66] = [["F#"][6][3]];
-    midiNote[67] = [["G"][7][3]];
-    midiNote[68] = [["G#"][8][3]];
-    midiNote[69] = [["A"][9][3]];
-    midiNote[70] = [["A#"][10][3]];
-    midiNote[71] = [["B"][11][3]];
+    midiNote[60] = ["C", 0, 3];
+    midiNote[61] = ["C#", 1, 3];
+    midiNote[62] = ["D", 2, 3];
+    midiNote[63] = ["D#", 3, 3];
+    midiNote[64] = ["E", 4, 3];
+    midiNote[65] = ["F", 5, 3];
+    midiNote[66] = ["F#", 6, 3];
+    midiNote[67] = ["G", 7, 3];
+    midiNote[68] = ["G#", 8, 3];
+    midiNote[69] = ["A", 9, 3];
+    midiNote[70] = ["A#", 10, 3];
+    midiNote[71] = ["B", 11, 3];
 
-    midiNote[72] = [["C"][12][4]];
-    midiNote[73] = [["C#"][13][4]];
-    midiNote[74] = [["D"][14][4]];
-    midiNote[75] = [["D#"][15][4]];
-    midiNote[76] = [["E"][16][4]];
-    midiNote[77] = [["F"][17][4]];
-    midiNote[78] = [["F#"][18][4]];
-    midiNote[79] = [["G"][19][4]];
-    midiNote[80] = [["G#"][20][4]];
-    midiNote[81] = [["A"][21][4]];
-    midiNote[82] = [["A#"][22][4]];
-    midiNote[83] = [["B"][23][4]];
+    midiNote[72] = ["C", 12, 4];
+    midiNote[73] = ["C#", 13, 4];
+    midiNote[74] = ["D", 14, 4];
+    midiNote[75] = ["D#", 15, 4];
+    midiNote[76] = ["E", 16, 4];
+    midiNote[77] = ["F", 17, 4];
+    midiNote[78] = ["F#", 18, 4];
+    midiNote[79] = ["G", 19, 4];
+    midiNote[80] = ["G#", 20, 4];
+    midiNote[81] = ["A", 21, 4];
+    midiNote[82] = ["A#", 22, 4];
+    midiNote[83] = ["B", 23, 4];
 
     return midiNote;
 }
 
-noteFreq = convertMidi();
+midiNote = convertMidi();
 
 function onMIDIMessage(event) {
     // event.data is an array
