@@ -150,11 +150,11 @@ for (let i = 0; i < keys.length; i++) {
 //Auswahl Waveform für Oszillator 1
 for (let i = 0; i < waveform.length; i++) {
   console.log(waveform[i].id);
-  waveform[i].addEventListener("click", function() {getWaveform(waveform[i].id)});
+  waveform[i].addEventListener("click", function() {getWaveformOszi1(waveform[i].id)});
 }
 
-function getWaveform(selectedWaveform1) {
-  console.log(selectedWaveform1);
+function getWaveformOszi1(selectedWaveform1) {
+  console.log('Oszi 1:', selectedWaveform1);
   currentWaveform1 = selectedWaveform1;
 }
 
@@ -175,11 +175,11 @@ document.querySelector("#lfoSlider").addEventListener("input", function(e){
 //Auswahl Waveform für Oszillator 2
 for (let i = 0; i < waveform2.length; i++) {
   console.log(waveform2[i].id);
-  waveform2[i].addEventListener("click", function() {getWaveform(waveform2[i].id)});
+  waveform2[i].addEventListener("click", function() {getWaveformOszi2(waveform2[i].id)});
 }
 
-function getWaveform(selectedWaveform2) {
-  console.log(selectedWaveform2);
+function getWaveformOszi2(selectedWaveform2) {
+  console.log('Oszi 2: ', selectedWaveform2);
   currentWaveform2 = selectedWaveform2;
 }
 
@@ -218,4 +218,129 @@ function startNote(octave, note, name) {
 function stopNote(octave, note, name) {
   oscillators1[note].stop(context.currentTime + 0.005);
   oscillators2[note].stop(context.currentTime + 0.005);
+}
+
+
+
+function controlChange(channel, value) {
+  //Pitch (MODULATION)
+  if (channel == 1){
+    console.log('Pitch: ', value)
+  }
+
+  // Bend (EXPRESSION)
+  if (channel == 11){
+    console.log('Bend: ', value)
+  }
+
+  // Main Gain (VOLUME)
+  if (channel == 7){   
+    console.log('Main Gain: ', value)
+  }
+
+
+  // Oszi 1 Gain (SOUND_CONTROLLER_1)
+  if (channel == 70){
+    console.log('Oszi 1 Gain: ', value)
+  }
+
+  // Oszi 1 LFO (SOUND_CONTROLLER_2)
+  if (channel == 71){  
+    console.log('Oszi 1 LFO: ', value)
+  }
+  
+  // Oszi 1 Waveform (SOUND_CONTROLLER_3)
+  if (channel == 72){   
+    if (value <= 31) {   // sine (0..31)
+      getWaveformOszi1('sine');
+    }
+    else if (value <= 63) {   // triangle (32..63)
+      getWaveformOszi1('triangle');
+    }
+    else if (value <= 95) {   // sawtooth (64..95)
+      getWaveformOszi1('sawtooth');
+    }
+    else if (value <= 127) {   // triangle (96..127)
+      getWaveformOszi1('rectangle');
+    }
+  }
+
+  // Oszi 2 Gain (SOUND_CONTROLLER_4)
+  if (channel == 73){   
+    console.log('Pszi 2 Gain: ', value)
+  }
+
+  // Oszi 2 LFO (SOUND_CONTROLLER_5)
+  if (channel == 74){ 
+    console.log('Oszi 2 LFO: ', value)
+  }
+
+  // Waveform Oszi 2 (SOUND_CONTROLLER_6)
+  if (channel == 75){   
+    if (value <= 31) {   // sine (0..31)
+      getWaveformOszi2('sine');
+    }
+    else if (value <= 63) {   // triangle (32..63)
+      getWaveformOszi2('triangle');
+    }
+    else if (value <= 95) {   // sawtooth (64..95)
+      getWaveformOszi2('sawtooth');
+    }
+    else if (value <= 127) {   // triangle (96..127)
+      getWaveformOszi2('rectangle');
+    }
+  }
+
+
+  // Mode (BANK_SELECT)
+  if (channel == 0){   
+    if (value <= 41) {   // keys (0..41)
+      console.log('Mode: Keys')
+    }
+    else if (value <= 83) {   // drums (42..83)
+      console.log('Mode: Drums')
+    }
+    else if (value <= 127) {   // sounds (84..127)
+      console.log('Mode: Sounds')
+    }
+  }
+
+
+  // Record / Play (GENERAL_PURPOSE_CONTROLLER_1)
+  if (channel == 16){   
+    if (value <= 63) {   // play (0..63)
+      console.log('Play')
+    }
+    else if (value <= 127) {   // record (64..127)
+      console.log('Record')
+    }
+  }
+
+
+  // Distortion (EFFECTS_1)
+  if (channel == 91){   
+    if (value <= 63) {   // off (0..63)
+      console.log('Distortion off')
+    }
+    else if (value <= 127) {   // on (64..127)
+      console.log('Distortion on')
+    }
+  }
+
+
+  // Reverb (EFFECTS_2)
+  if (channel == 92){   
+    if (value <= 63) {   // off (0..63)
+      console.log('Reverb off')
+    }
+    else if (value <= 127) {   // on (64..127)
+      console.log('Reverb on')
+    }
+  }
+
+
+  
+
+
+
 }

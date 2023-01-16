@@ -3,7 +3,7 @@ import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 import matplotlib.path as mpltPath
 from rtmidi.midiutil import open_midioutput
-from rtmidi.midiconstants import NOTE_OFF, NOTE_ON
+from rtmidi.midiconstants import *  #NOTE_OFF, NOTE_ON
 import json
 
 
@@ -20,8 +20,11 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 rotateImage180 = True
 
 # set how many contours to take for object detection
-contourStart = 0
+contourStart = 1
 contourEnd = 15
+
+# fader midi send threshold (only send if fader change by this value)
+midiFaderSendThres = 3
 
 # midi port
 midiout, port_name = open_midioutput(1)
@@ -43,19 +46,14 @@ hsv_objectColor = hsv_blue   # select color
 
 # ---- Points for warping
 
-# map inPoints to outPoints
+# -- map inPoints to outPoints
 # DONT CHANGE --> mapped to Layout
 outPoint1 = [31, 31]
 outPoint2 = [1245, 31]
 outPoint3 = [31, 692]
 outPoint4 = [1245, 692]
 
-# no warping for now
-inPoint1 = outPoint1
-inPoint2 = outPoint2
-inPoint3 = outPoint3
-inPoint4 = outPoint4
-
+# -- try to load savefile
 try:
     with open('opencvSavefile.json', 'r') as openfile:
         json_object = json.load(openfile)
@@ -64,18 +62,23 @@ try:
     inPoint2 = json_object['cornerTopRight']
     inPoint3 = json_object['cornerBottomLeft']
     inPoint4 = json_object['cornerBottomRight']
-
 except FileNotFoundError:
     print('Savefile not found. Continue without savings...\n')
+    # -- no warping for now
+    inPoint1 = outPoint1
+    inPoint2 = outPoint2
+    inPoint3 = outPoint3
+    inPoint4 = outPoint4
 
-# save as array
+# -- save as array
 points1_tuple = np.float32([inPoint1, inPoint2, inPoint3, inPoint4])
 points2_tuple = np.float32([outPoint1, outPoint2, outPoint3, outPoint4])
 # ----
 
+SendMidiLayoutList = []
 # ----- Class Layout
 class Layout:
-    def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiNote):
+    def __init__(self, name, type, cx, cy, width, heigth, colorRGB, midiControlChannel, midiOffValue = 0, midiOnValue = 0, midiSendOff=False):
         """Initialize Layout Object"""
 
         # -- check if Type is admitted
@@ -84,28 +87,41 @@ class Layout:
         elif type == 'button':
             self.type = type
             self.pressed = False
+            self.prevPressed = False
         elif type in ('faderH', 'faderV'):
             self.type = type
             self.value = 0
-        # --
-
+            self.prevValue = 0
+        # -- set states
+        self.stateChanged = False
+        # -- set values
         self.name = name
         self.center = (cx, cy)
         self.size = (width, heigth)
         self.color = colorRGB
-        self.note = midiNote
+        # -- set midi
+        self.midiCC = midiControlChannel
+        self.midiOnValue = midiOnValue
+        self.midiOffValue = midiOffValue
+        self.midiSendOff = midiSendOff
+        self.midiMessage = [CONTROL_CHANGE, self.midiCC, 0]
 
         self.calcRectPoints()
     
     # ---- Functions
     def update(self, imageToDrawOn, objects):
         """Main upate function, needs to be called every frame"""
-        self.draw(imageToDrawOn)
+
+        # -- check colission
         self.checkCollision(imageToDrawOn, objects)
+        self.checkStateChange()
+
+        self.draw(imageToDrawOn)
         self.playMidi()
 
     def calcRectPoints(self):
         """calculate corner points for rectangle, from center-XY and Witdh/Height"""
+
         self.p_ul = np.array((self.center[0] - self.size[0]/2, self.center[1] - self.size[1]/2), dtype='int')
         self.p_ur = np.array((self.center[0] + self.size[0]/2, self.center[1] - self.size[1]/2), dtype='int')
         self.p_bl = np.array((self.center[0] - self.size[0]/2, self.center[1] + self.size[1]/2), dtype='int')
@@ -113,11 +129,14 @@ class Layout:
 
     def draw(self, frame):
         """simple draw border rectangle"""
+
         cv2.rectangle(frame, self.p_ur, self.p_bl, self.color, 2)
-        return
 
     def checkCollision(self, frame, objects):
         """detect if an object is inside and give visual feedback"""
+        # -- Reset State
+        if self.type == 'button':
+            self.pressed = False
 
         # -- check for every object, if object center is inside rectangle
         for obj_cX, obj_cY, obj_w, obj_h in objects:
@@ -128,37 +147,81 @@ class Layout:
                     # -- set value
                     self.pressed = True
                     # -- draw visual feedback
-                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
-                    cv2.putText(frame, self.name, np.int16((self.center[0]-self.size[0]/2+10, self.center[1]+10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)   # border
+                    cv2.putText(frame, self.name, np.int16((self.center[0]-self.size[0]/2+10, self.center[1]+10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)   # text name
+                    cv2.rectangle(frame, np.array((obj_cX-obj_w/2, obj_cY-obj_h/2), dtype='int'), np.array((obj_cX+obj_w/2, obj_cY+obj_h/2), dtype='int'), (127,0,255,0), 2)   # mark taken object
                     # -- print in console
                     print(self.name, ': pressed',)   # console feedback
+                    break
                 
                 if self.type == 'faderH':   # if horizontal fader
                     # -- set value
                     value = obj_cX - (self.center[0] - self.size[0]/2)
-                    value = value / (self.size[0]) * 100
+                    value = value / (self.size[0]) * 127    # map to range 0..127
                     self.value = value
                     # -- draw visual feedback
-                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
-                    cv2.line(frame,np.int16((obj_cX, self.center[1]+self.size[1]/2)), np.int16((obj_cX, self.center[1]-self.size[1]/2)), (0,0,0), 3)
-                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((obj_cX + 5, self.center[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)  # border
+                    cv2.line(frame,np.int16((obj_cX, self.center[1]+self.size[1]/2)), np.int16((obj_cX, self.center[1]-self.size[1]/2)), (0,0,0), 3)   # fader position line
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((obj_cX + 5, self.center[1]+self.size[1]/2 -10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)   # text fader value
+                    cv2.rectangle(frame, np.array((obj_cX-obj_w/2, obj_cY-obj_h/2), dtype='int'), np.array((obj_cX+obj_w/2, obj_cY+obj_h/2), dtype='int'), (127,0,255,0), 2)   # mark taken object
                     # -- print in console
                     print(self.name, ' = ', self.value)
+                    break
                 
                 if self.type == 'faderV':   # if vertical fader
                     # -- set value
                     value = obj_cY - (self.center[1] - self.size[1]/2)
-                    value = value / (self.size[1]) * 100
+                    value = value / (self.size[1]) * 127   # map to range 0..127
                     self.value = value
                     # -- draw visual feedback
-                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)
-                    cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, obj_cY)), np.int16((self.center[0]+self.size[0]/2, obj_cY)), (0,0,0), 3)
-                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.center[0]-self.size[0]/2, obj_cY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+                    cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)   # border
+                    cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, obj_cY)), np.int16((self.center[0]+self.size[0]/2, obj_cY)), (0,0,0), 3)   # fader position line
+                    cv2.putText(frame, str(np.round(self.value, 1)), np.int16((self.center[0]-self.size[0]/2, obj_cY - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)   # text fader value
+                    cv2.rectangle(frame, np.array((obj_cX-obj_w/2, obj_cY-obj_h/2), dtype='int'), np.array((obj_cX+obj_w/2, obj_cY+obj_h/2), dtype='int'), (127,0,255,0), 2)   # mark taken object
                     # -- print in console
                     print(self.name, ' = ', self.value)
+                    break
         
+        
+    def checkStateChange(self):
+        """checks if new state is diffrent to previous state"""
+        # -- check if state has changed
+        if self.type == 'button':
+            if self.prevPressed != self.pressed:
+                # state changed
+                self.stateChanged = True
+            else:   
+                # state did not change
+                self.stateChanged = False
+            # -- remember state for next check
+            self.prevPressed = self.pressed 
+
+        if self.type in ('faderH', 'faderV'):
+            if (self.value <= self.prevValue - midiFaderSendThres) or (self.value >= self.prevValue + midiFaderSendThres):
+                # state changed
+                self.stateChanged = True
+            else:
+                # state did not change
+                self.stateChanged = False
+            # -- remember state for next check
+            self.prevValue = self.value
 
     def playMidi(self):
+        if self.stateChanged:   # if state has changed
+            # -- button
+            if self.type == 'button':
+                if self.pressed:
+                    self.midiMessage = [CONTROL_CHANGE, self.midiCC, self.midiOnValue]   
+                else:
+                    if self.midiSendOff:
+                        self.midiMessage = [CONTROL_CHANGE, self.midiCC, self.midiOffValue]
+            # -- fader
+            elif self.type in ('faderH', 'faderV'):
+                self.midiMessage = [CONTROL_CHANGE, self.midiCC, int(self.value)]
+            
+            # -- send midi
+            midiout.send_message(self.midiMessage)
+            print('send midi: ', self.name, self.midiMessage)
         return
 
 # -----
@@ -181,10 +244,10 @@ class Key:
         # -- set states
         self.pressed = False
         self.prevPressed = False
-        self.stateChange = False
+        self.stateChanged = False
         # -- set midi notes
-        self.note_on = [0x90, self.note, 112] # channel 1, note, velocity 112
-        self.note_off = [0x80, self.note, 0]
+        self.note_on = [NOTE_ON, self.note, 112] # channel 1, note, velocity 112
+        self.note_off = [NOTE_OFF, self.note, 0]
         # -- set geometry
         self.vertices = np.array(vertices)
         pts = vertices.reshape((-1,1,2)) 
@@ -196,14 +259,7 @@ class Key:
 
         # -- check Collision
         self.checkCollision(imageToDrawon, fingertipObjects)
-        # -- check if state has changed
-        if self.prevPressed != self.pressed:   
-            # state changed
-            self.stateChange = True
-        else:   
-            # state did not change
-            self.stateChange = False
-        self.prevPressed = self.pressed   # remember state for next check
+        self.checkStateChange()
 
         self.draw(imageToDrawon)
         self.playMidi()
@@ -254,12 +310,23 @@ class Key:
         else:
             # no fingertipObject is available
             self.pressed = False
-        
+    
+    def checkStateChange(self):
+        """checks if new state is diffrent to previous state"""
+        # -- check if state has changed
+        if self.prevPressed != self.pressed:   
+            # state changed
+            self.stateChanged = True
+        else:   
+            # state did not change
+            self.stateChanged = False
+        # -- remember state for next check
+        self.prevPressed = self.pressed
     
     def playMidi(self):
         """send midi noteOn or noteOff depending on state"""
 
-        if self.stateChange:   # if state has changed
+        if self.stateChanged:   # if state has changed
             if self.pressed:
                 midiout.send_message(self.note_on)
                 print('send midi: ', self.name, self.note_on)
@@ -338,7 +405,7 @@ def detect_objects(sortedContours, drawToFrame, mask, start, stop, color=(255,0,
             
             # if True, draw bounding rect around object
             if boundingRect:
-                cv2.rectangle(drawToFrame,(x,y),(x+w,y+h),color,2)
+                cv2.rectangle(drawToFrame,(x,y),(x+w,y+h),color,1)
 
         except IndexError:
             # no Objects available
@@ -405,31 +472,36 @@ def mouseCallbackWarping(event, x, y, flags, param):
 
 # ---- set up Layout
 layout = []
-# generel
-layout.append(Layout('mode keys', 'button', 81, 81, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Record', 'button', 81, 188, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Distortion', 'button', 81, 295, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Modus Drums', 'button', 188, 81, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Play', 'button', 188, 188, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Reverb', 'button', 188, 295, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Modus Sounds', 'button', 295, 81, 100, 100, (255,255,0), 'note'))
-layout.append(Layout('Pitch', 'faderV', 76, 527, 90, 330, (90,90,90), 'note'))
-layout.append(Layout('Bend', 'faderV', 173, 527, 90, 330, (90,90,90), 'note'))
-layout.append(Layout('Gain', 'faderV', 270, 527, 90, 330, (90,90,90), 'note'))
-# Oszi1
-layout.append(Layout('Volume', 'faderH', 584, 107, 420, 73, (205,100,205), 'note'))
-layout.append(Layout('LFO', 'faderH', 584, 180, 420, 73, (205,100,205), 'note'))
-layout.append(Layout('Sinus', 'button', 427, 266, 105, 100, (205,100,205), 'note'))
-layout.append(Layout('Triangle', 'button', 532, 266, 105, 100, (205,100,205), 'note'))
-layout.append(Layout('Sawtooth', 'button', 637, 266, 105, 100, (205,100,205), 'note'))
-layout.append(Layout('Rectangle', 'button', 742,266, 105, 100, (205,100,205), 'note'))
-# Oszi2
-layout.append(Layout('Volume', 'faderH', 1035, 107, 420, 73, (205,100,100), 'note'))
-layout.append(Layout('LFO', 'faderH', 1035, 180, 420, 73, (205,100,100), 'note'))
-layout.append(Layout('Sinus', 'button', 878, 266, 105, 100, (205,100,100), 'note'))
-layout.append(Layout('Triangle', 'button', 983, 266, 105, 100, (205,100,100), 'note'))
-layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), 'note'))
-layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), 'note'))
+# -- button
+layout.append(Layout('mode keys', 'button', 81, 81, 100, 100, (255,255,0), BANK_SELECT, midiOffValue=0, midiOnValue=41))
+layout.append(Layout('Modus Drums', 'button', 188, 81, 100, 100, (255,255,0), BANK_SELECT, midiOffValue=0, midiOnValue=83))
+layout.append(Layout('Modus Sounds', 'button', 295, 81, 100, 100, (255,255,0), BANK_SELECT, midiOffValue=0, midiOnValue=127))
+# -- play/record
+layout.append(Layout('Record', 'button', 81, 188, 100, 100, (255,255,0), GENERAL_PURPOSE_CONTROLLER_1, midiOffValue=0, midiOnValue=127))
+layout.append(Layout('Play', 'button', 188, 188, 100, 100, (255,255,0), GENERAL_PURPOSE_CONTROLLER_1, midiOffValue=0, midiOnValue=63))
+# -- Distortion/Reverb
+layout.append(Layout('Distortion', 'button', 81, 295, 100, 100, (255,255,0), EFFECTS_1, midiOffValue=0, midiOnValue=127, midiSendOff=True))
+layout.append(Layout('Reverb', 'button', 188, 295, 100, 100, (255,255,0), EFFECTS_2, midiOffValue=0, midiOnValue=127, midiSendOff=True))
+# -- Fader
+layout.append(Layout('Pitch', 'faderV', 76, 527, 90, 330, (90,90,90), MODULATION))
+layout.append(Layout('Bend', 'faderV', 173, 527, 90, 330, (90,90,90), EXPRESSION))
+layout.append(Layout('Gain', 'faderV', 270, 527, 90, 330, (90,90,90), VOLUME))
+# --- Oszi1 Fader
+layout.append(Layout('Volume', 'faderH', 584, 107, 420, 73, (205,100,205), SOUND_CONTROLLER_1))
+layout.append(Layout('LFO', 'faderH', 584, 180, 420, 73, (205,100,205), SOUND_CONTROLLER_2))
+# -- Oszi 1 Button
+layout.append(Layout('Sinus', 'button', 427, 266, 105, 100, (205,100,205), SOUND_CONTROLLER_3, midiOnValue=31))
+layout.append(Layout('Triangle', 'button', 532, 266, 105, 100, (205,100,205), SOUND_CONTROLLER_3, midiOnValue=63))
+layout.append(Layout('Sawtooth', 'button', 637, 266, 105, 100, (205,100,205), SOUND_CONTROLLER_3, midiOnValue=95))
+layout.append(Layout('Rectangle', 'button', 742,266, 105, 100, (205,100,205), SOUND_CONTROLLER_3, midiOnValue=127))
+# --- Oszi2 Fader
+layout.append(Layout('Volume', 'faderH', 1035, 107, 420, 73, (205,100,100), SOUND_CONTROLLER_4))
+layout.append(Layout('LFO', 'faderH', 1035, 180, 420, 73, (205,100,100), SOUND_CONTROLLER_5))
+# -- Oszi 2 Button
+layout.append(Layout('Sinus', 'button', 878, 266, 105, 100, (205,100,100), SOUND_CONTROLLER_6, midiOnValue=31))
+layout.append(Layout('Triangle', 'button', 983, 266, 105, 100, (205,100,100), SOUND_CONTROLLER_6, midiOnValue=63))
+layout.append(Layout('Sawtooth', 'button', 1088, 266, 105, 100, (205,100,100), SOUND_CONTROLLER_6, midiOnValue=95))
+layout.append(Layout('Rectangle', 'button', 1193,266, 105, 100, (205,100,100), SOUND_CONTROLLER_6, midiOnValue=127))
 # ----
 
 # ---- set up keys
@@ -558,7 +630,7 @@ while cap.isOpened():
         objectMask = do_morphology(objectMask, medianBlur=True, opening=False, closing=True, dilation=True)
         # -- find contours and create object list
         sortedContours = find_contours(objectMask)
-        objects = detect_objects(sortedContours, processedFrame, objectMask, contourStart, contourEnd, (0,0,255), True, True)
+        objects = detect_objects(sortedContours, processedFrame, objectMask, contourStart, contourEnd, (125,125,255), True, True)
     # --------- 
 
     # ---- update Layout
