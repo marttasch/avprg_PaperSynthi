@@ -150,12 +150,17 @@ for (let i = 0; i < keys.length; i++) {
 //Auswahl Waveform für Oszillator 1
 for (let i = 0; i < waveform.length; i++) {
   console.log(waveform[i].id);
-  waveform[i].addEventListener("click", function() {getWaveformOszi1(waveform[i].id)});
+  waveform[i].addEventListener("click", function() {getWaveformOszi1(waveform[i])});
 }
 
-function getWaveformOszi1(selectedWaveform1) {
-  console.log('Oszi 1:', selectedWaveform1);
-  currentWaveform1 = selectedWaveform1;
+function getWaveformOszi1(selectedWaveformElement) {
+  waveformName = selectedWaveformElement.name
+  console.log('Oszi 1: ', waveformName);
+  currentWaveform1 = waveformName;
+  for (let i = 0; i < waveform.length; i++) {
+    waveform[i].classList.remove('active');
+  }
+  selectedWaveformElement.classList.add('active')
 }
 
 // Slider für Gain für Oszillator 1
@@ -175,12 +180,17 @@ document.querySelector("#lfoSlider").addEventListener("input", function(e){
 //Auswahl Waveform für Oszillator 2
 for (let i = 0; i < waveform2.length; i++) {
   console.log(waveform2[i].id);
-  waveform2[i].addEventListener("click", function() {getWaveformOszi2(waveform2[i].id)});
+  waveform2[i].addEventListener("click", function() {getWaveformOszi2(waveform2[i])});
 }
 
-function getWaveformOszi2(selectedWaveform2) {
-  console.log('Oszi 2: ', selectedWaveform2);
-  currentWaveform2 = selectedWaveform2;
+function getWaveformOszi2(selectedWaveformElement) {
+  waveformName = selectedWaveformElement.name
+  console.log('Oszi 2: ', waveformName);
+  currentWaveform2 = waveformName;
+  for (let i = 0; i < waveform2.length; i++) {
+    waveform2[i].classList.remove('active');
+  }
+  selectedWaveformElement.classList.add('active')
 }
 
 // Slider für Gain für Oszillator 2
@@ -225,69 +235,84 @@ function stopNote(octave, note, name) {
 function controlChange(channel, value) {
   //Pitch (MODULATION)
   if (channel == 1){
-    console.log('Pitch: ', value)
+    console.log('Pitch: ', value);
+    document.querySelector("#pitchSlider").value = value/127*-1;
   }
 
   // Bend (EXPRESSION)
   if (channel == 11){
-    console.log('Bend: ', value)
+    console.log('Bend: ', value);
+    document.querySelector("#bendSlider").value = value/127*-1;
   }
 
   // Main Gain (VOLUME)
   if (channel == 7){   
-    console.log('Main Gain: ', value)
+    console.log('Main Gain: ', value);
+    document.querySelector("#mainGainSlider").value = value/127*-1;
   }
 
 
   // Oszi 1 Gain (SOUND_CONTROLLER_1)
   if (channel == 70){
-    console.log('Oszi 1 Gain: ', value)
+    console.log('Oszi 1 Gain: ', value);
+    document.querySelector("#gainSlider").value = value/127;
   }
 
   // Oszi 1 LFO (SOUND_CONTROLLER_2)
   if (channel == 71){  
-    console.log('Oszi 1 LFO: ', value)
+    console.log('Oszi 1 LFO: ', value);
+    document.querySelector("#lfoSlider").value = value/127*100;
   }
   
   // Oszi 1 Waveform (SOUND_CONTROLLER_3)
   if (channel == 72){   
     if (value <= 31) {   // sine (0..31)
-      getWaveformOszi1('sine');
+      //getWaveformOszi1('sine');
+      document.querySelector('#sine').click();
     }
     else if (value <= 63) {   // triangle (32..63)
-      getWaveformOszi1('triangle');
+      //getWaveformOszi1('triangle');
+      document.querySelector('#triangle').click();
     }
     else if (value <= 95) {   // sawtooth (64..95)
-      getWaveformOszi1('sawtooth');
+      //getWaveformOszi1('sawtooth');
+      document.querySelector('#sawtooth').click();
     }
     else if (value <= 127) {   // triangle (96..127)
-      getWaveformOszi1('rectangle');
+      //getWaveformOszi1('square');
+      document.querySelector('#square').click();
     }
   }
 
   // Oszi 2 Gain (SOUND_CONTROLLER_4)
   if (channel == 73){   
-    console.log('Pszi 2 Gain: ', value)
+    console.log('Pszi 2 Gain: ', value);
+    document.querySelector("#gainSlider2").value = value/127;
   }
 
   // Oszi 2 LFO (SOUND_CONTROLLER_5)
   if (channel == 74){ 
-    console.log('Oszi 2 LFO: ', value)
+    console.log('Oszi 2 LFO: ', value);
+    document.querySelector("#lfoSlider2").value = value/127*100;
   }
 
   // Waveform Oszi 2 (SOUND_CONTROLLER_6)
   if (channel == 75){   
     if (value <= 31) {   // sine (0..31)
-      getWaveformOszi2('sine');
+      //getWaveformOszi2('sine');
+      document.querySelector('#sine2').click();
     }
     else if (value <= 63) {   // triangle (32..63)
-      getWaveformOszi2('triangle');
+      //getWaveformOszi2('triangle');
+      document.querySelector('#triangle2').click();
     }
     else if (value <= 95) {   // sawtooth (64..95)
-      getWaveformOszi2('sawtooth');
+      //getWaveformOszi2('sawtooth');
+      document.querySelector('#sawtooth2').click();
     }
     else if (value <= 127) {   // triangle (96..127)
-      getWaveformOszi2('rectangle');
+      //getWaveformOszi2('square');
+      document.querySelector('#square2').click();
     }
   }
 

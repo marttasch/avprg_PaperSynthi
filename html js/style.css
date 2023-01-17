@@ -115,7 +115,7 @@ html, body {
     cursor: pointer;
   }
   
-  .waveform:hover {
+  .waveform:hover, .active {
     background: rgba(255,255,255,0.2);
   }
 
@@ -129,7 +129,7 @@ html, body {
     cursor: pointer;
   }
   
-  .waveform2:hover {
+  .waveform2:hover, .active {
     background: rgba(255,255,255,0.2);
   }
       
