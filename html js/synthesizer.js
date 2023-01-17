@@ -164,10 +164,10 @@ function getWaveformOszi1(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 1
-Osc1Gain.connect(context.destination);
+Osc1Gain.connect(masterGain);
 document.querySelector("#gainSlider").addEventListener("input", function (e) {
   let gain1Value = (this.value);
-  document.querySelector("#gainOutput").innerHTML = gain1Value*100 + " %";
+  document.querySelector("#gainOutput").innerHTML = (gain1Value*100).toFixed(0) + " %";
   Osc1Gain.gain.value = gain1Value;
 });
 
@@ -194,10 +194,10 @@ function getWaveformOszi2(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 2
-Osc2Gain.connect(context.destination);
+Osc2Gain.connect(masterGain);
 document.querySelector("#gainSlider2").addEventListener("input", function (e) {
   let gain2Value = (this.value);
-  document.querySelector("#gainOutput2").innerHTML = gain2Value*100 + " %";
+  document.querySelector("#gainOutput2").innerHTML = (gain2Value*100).toFixed(0) + " %";
   Osc2Gain.gain.value = gain2Value;
 });
 
@@ -207,6 +207,12 @@ document.querySelector("#lfoSlider2").addEventListener("input", function(e){
   document.querySelector("#lfoOutput2").innerHTML = this.value + " Hz";
 });
 
+// MasternGain-Slider
+document.querySelector("#mainGainSlider").addEventListener("input", function (e) {
+  let masterGainValue = (this.value);
+  document.querySelector("#mainGainOutput").innerHTML = (masterGainValue*100).toFixed(0) + " %";
+  masterGain.gain.value = masterGainValue;
+});
 
 function startNote(octave, note, name) {
   
