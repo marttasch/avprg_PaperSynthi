@@ -180,8 +180,11 @@ html, body {
     transform:rotate(90deg);
   }
   #pitchOutput{
-    display: inline-flex;
-    transform:rotate(90deg);
+    position: fixed;
+    top: 520px;
+    left: 70px;
+    font-weight: bold;
+    font-size: 0.45cm;
   }
   .pitch input{
     width: 330px;
@@ -196,8 +199,11 @@ html, body {
    
   }
     #bendOutput{
-    display: inline-flex;
-    transform:rotate(90deg);
+      position: fixed;
+      top: 520px;
+      left: 170px;
+      font-weight: bold;
+      font-size: 0.45cm;
   }
   .bend input{
     width: 330px;
@@ -211,8 +217,11 @@ html, body {
     font-size: 0.45cm;
   }
     #mainGainOutput{
-    display: inline-flex;
-    transform:rotate(90deg);
+    position: fixed;
+    top: 520px;
+    left: 260px;
+    font-weight: bold;
+    font-size: 0.45cm;
   }
   .mainGain input{
     width: 330px;
