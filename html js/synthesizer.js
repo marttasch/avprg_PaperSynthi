@@ -218,7 +218,7 @@ function startNote(octave, note, name) {
   
   oscillators1[note] = context.createOscillator();
   oscillators1[note].frequency.value = noteFreq[octave][name];
-  lfoGain.connect(Osc1Gain.gain);
+  //lfoGain.connect(Osc1Gain.gain);
   oscillators1[note].type = currentWaveform1;
   oscillators1[note].connect(Osc1Gain);
   oscillators1[note].start(context.currentTime);
@@ -236,38 +236,61 @@ function stopNote(octave, note, name) {
   oscillators2[note].stop(context.currentTime + 0.005);
 }
 
-
+function mapValue (number, inMin, inMax, outMin, outMax) {
+  return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
 
 function controlChange(channel, value) {
   //Pitch (MODULATION)
   if (channel == 1){
+    value = mapValue(value, 0, 127, 1, 0)
     console.log('Pitch: ', value);
-    document.querySelector("#pitchSlider").value = value/127*-1;
+    document.querySelector("#pitchSlider").value = value;
+
+    document.querySelector("#pitchSlider").innerHTML = (value*100).toFixed(0) + " %";
+    //masterGain.gain.value = value;
   }
 
   // Bend (EXPRESSION)
   if (channel == 11){
+    value = mapValue(value, 0, 127, 1, 0)
     console.log('Bend: ', value);
-    document.querySelector("#bendSlider").value = value/127*-1;
+    document.querySelector("#bendSlider").value = value;
+
+    document.querySelector("#bendSlider").innerHTML = (value*100).toFixed(0) + " %";
+    //masterGain.gain.value = value;
   }
 
   // Main Gain (VOLUME)
   if (channel == 7){   
+    value = mapValue(value, 0, 127, 1, 0)
     console.log('Main Gain: ', value);
-    document.querySelector("#mainGainSlider").value = value/127*-1;
+    document.querySelector("#mainGainSlider").value = value;
+
+    document.querySelector("#mainGainOutput").innerHTML = (value*100).toFixed(0) + " %";
+    masterGain.gain.value = value;
   }
 
 
   // Oszi 1 Gain (SOUND_CONTROLLER_1)
   if (channel == 70){
+    value = mapValue(value, 0, 127, 0, 1)
+
     console.log('Oszi 1 Gain: ', value);
-    document.querySelector("#gainSlider").value = value/127;
+    document.querySelector("#gainSlider").value = value;
+
+    document.querySelector("#gainOutput").innerHTML = (value*100).toFixed(0) + " %";
+    Osc1Gain.gain.value = value;
   }
 
   // Oszi 1 LFO (SOUND_CONTROLLER_2)
   if (channel == 71){  
+    value = mapValue(value, 0, 127, 0, 100)
+
     console.log('Oszi 1 LFO: ', value);
-    document.querySelector("#lfoSlider").value = value/127*100;
+    document.querySelector("#lfoSlider").value = value;
+
+    document.querySelector("#lfoOutput").innerHTML = value.toFixed(0) + " Hz";
   }
   
   // Oszi 1 Waveform (SOUND_CONTROLLER_3)
@@ -292,14 +315,23 @@ function controlChange(channel, value) {
 
   // Oszi 2 Gain (SOUND_CONTROLLER_4)
   if (channel == 73){   
+    value = mapValue(value, 0, 127, 0, 1)
+
     console.log('Pszi 2 Gain: ', value);
-    document.querySelector("#gainSlider2").value = value/127;
+    document.querySelector("#gainSlider2").value = value;
+
+    document.querySelector("#gainOutput2").innerHTML = (value*100).toFixed(0) + " %";
+    Osc2Gain.gain.value = value;
   }
 
   // Oszi 2 LFO (SOUND_CONTROLLER_5)
   if (channel == 74){ 
+    value = mapValue(value, 0, 127, 0, 100)
+
     console.log('Oszi 2 LFO: ', value);
     document.querySelector("#lfoSlider2").value = value/127*100;
+
+    document.querySelector("#lfoOutput2").innerHTML = value.toFixed(0) + " Hz";
   }
 
   // Waveform Oszi 2 (SOUND_CONTROLLER_6)
