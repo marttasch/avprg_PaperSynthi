@@ -172,7 +172,7 @@ class Layout:
                     # -- set value
                     value = obj_cY - (self.center[1] - self.size[1]/2)
                     value = value / (self.size[1]) * 127   # map to range 0..127
-                    self.value = value
+                    self.value = value  
                     # -- draw visual feedback
                     cv2.rectangle(frame, self.p_ur+(2,2), self.p_bl-(2,2), (0,255,255), 2)   # border
                     cv2.line(frame,np.int16((self.center[0]-self.size[0]/2, obj_cY)), np.int16((self.center[0]+self.size[0]/2, obj_cY)), (0,0,0), 3)   # fader position line
@@ -211,17 +211,24 @@ class Layout:
             # -- button
             if self.type == 'button':
                 if self.pressed:
-                    self.midiMessage = [CONTROL_CHANGE, self.midiCC, self.midiOnValue]   
-                else:
-                    if self.midiSendOff:
+                    self.midiMessage = [CONTROL_CHANGE, self.midiCC, self.midiOnValue]
+                    # -- send midi
+                    midiout.send_message(self.midiMessage)
+                    print('send midi: ', self.name, self.midiMessage)
+                elif self.midiSendOff == True:
                         self.midiMessage = [CONTROL_CHANGE, self.midiCC, self.midiOffValue]
+                        # -- send midi
+                        midiout.send_message(self.midiMessage)
+                        print('send midi: ', self.name, self.midiMessage)
+                        pass
             # -- fader
             elif self.type in ('faderH', 'faderV'):
                 self.midiMessage = [CONTROL_CHANGE, self.midiCC, int(self.value)]
+                # -- send midi
+                midiout.send_message(self.midiMessage)
+                print('send midi: ', self.name, self.midiMessage)
             
-            # -- send midi
-            midiout.send_message(self.midiMessage)
-            print('send midi: ', self.name, self.midiMessage)
+            
         return
 
 # -----
