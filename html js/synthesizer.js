@@ -1,14 +1,21 @@
 const context = new AudioContext();
 let Osc1Gain = context.createGain();
 let Osc2Gain = context.createGain();
+let preMainGain = context.createGai();
 let masterGain = context.createGain();
 let lfo = context.createOscillator();
 let lfoGain = context.createGain();
 let lfo2 = context.createOscillator();
 let lfoGain2 = context.createGain();
 
-let attack = 0.1;
-let release = 0.1;
+let reverb = context.createConvolver();
+let stateReverb = false;
+let reverbGain = context.createGain();
+reverbGain.gain.value = 0;
+loadImpulseResponse("room");
+
+let distortion = context.createWaveShaper();
+let stateDistortion = false;
 
 let currentWaveform1 = "sine";
 let currentWaveform2 = "sine";
@@ -140,6 +147,47 @@ function createNoteTable() {
 
 noteFreq = createNoteTable();
 
+// Distortion On oder Off
+document.querySelector("#Distortion").addEventListener("click", function(e) {
+  if(stateDistortion == false) {
+    stateDistortion = true;
+    distortionOn();
+  } else {
+    stateDistortion = false;
+    distortionOff();
+  }
+});
+
+function distortionOn(){
+  distortion.curve = makeDistortionCurve(100);
+}
+
+function distortionOff(){
+  distortion.curve = makeDistortionCurve(0);
+}
+
+// Reverb On oder Off
+document.querySelector("#Reverb").addEventListener("click", function(e) {
+  if(stateReverb == false) {
+    stateReverb = true;
+    reverbOn();
+  } else {
+    stateReverb = false;
+    reverbOff();
+  }
+});
+
+function reverbOn(){
+  reverbGain.gain.value = 1;
+  preMainGain.gain.value = 0;
+}
+
+function reverbOff(){
+  reverbGain.gain.value = 0;
+  preMainGain.gain.value = 1;
+}
+
+
 // Ton-Ausgabe bei Tastendruck
 for (let i = 0; i < keys.length; i++) {
   console.log(keys[i].getAttribute("octave"), keys[i].id);
@@ -164,7 +212,7 @@ function getWaveformOszi1(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 1
-Osc1Gain.connect(masterGain);
+Osc1Gain.connect(reverb);
 document.querySelector("#gainSlider").addEventListener("input", function (e) {
   let gain1Value = (this.value);
   document.querySelector("#gainOutput").innerHTML = (gain1Value*100).toFixed(0) + " %";
@@ -194,7 +242,7 @@ function getWaveformOszi2(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 2
-Osc2Gain.connect(masterGain);
+Osc2Gain.connect(reverb);
 document.querySelector("#gainSlider2").addEventListener("input", function (e) {
   let gain2Value = (this.value);
   document.querySelector("#gainOutput2").innerHTML = (gain2Value*100).toFixed(0) + " %";
@@ -207,7 +255,7 @@ document.querySelector("#lfoSlider2").addEventListener("input", function(e){
   document.querySelector("#lfoOutput2").innerHTML = this.value + " Hz";
 });
 
-// MasternGain-Slider
+// MasterGain-Slider
 document.querySelector("#mainGainSlider").addEventListener("input", function (e) {
   let masterGainValue = (this.value);
   document.querySelector("#mainGainOutput").innerHTML = (masterGainValue*100).toFixed(0) + " %";
@@ -218,13 +266,14 @@ function startNote(octave, note, name) {
   
   oscillators1[note] = context.createOscillator();
   oscillators1[note].frequency.value = noteFreq[octave][name];
-  //lfoGain.connect(Osc1Gain.gain);
+  lfoGain.connect(Osc1Gain.gain);
   oscillators1[note].type = currentWaveform1;
   oscillators1[note].connect(Osc1Gain);
   oscillators1[note].start(context.currentTime);
 
   oscillators2[note] = context.createOscillator();
   oscillators2[note].frequency.value = noteFreq[octave][name];
+  oscillators2[note].detune.value = 2;
   lfoGain2.connect(Osc2Gain.gain);
   oscillators2[note].type = currentWaveform2;
   oscillators2[note].connect(Osc2Gain);
@@ -232,9 +281,14 @@ function startNote(octave, note, name) {
 }
 
 function stopNote(octave, note, name) {
-  oscillators1[note].stop(context.currentTime + 0.005);
-  oscillators2[note].stop(context.currentTime + 0.005);
+  Osc1Gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
+  Osc2Gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
+  masterGain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
+  oscillators1[note].stop(context.currentTime + 0.05);
+  oscillators2[note].stop(context.currentTime + 0.05);
 }
+
+// MIDI FUNKTIONEN
 
 function mapValue (number, inMin, inMax, outMin, outMax) {
   return (number - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
