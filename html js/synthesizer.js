@@ -24,16 +24,16 @@ const oscillators1 = [];
 const oscillators2 = []; 
 
 lfo.frequency.value = 6;
-lfoGain.gain.value = 0.05;
+lfoGain.gain.value = 0.5;
 lfo.start(context.currentTime);
 lfo.connect(lfoGain);
 
 lfo2.frequency.value = 6;
-lfoGain2.gain.value = 0.05;
+lfoGain2.gain.value = 0.5;
 lfo2.start(context.currentTime);
 lfo2.connect(lfoGain);
 
-masterGain.gain.value = 1; 
+masterGain.gain.value = 0.3; 
 masterGain.connect(context.destination);
 
 let noteFreq = null;
@@ -217,6 +217,7 @@ document.querySelector("#gainSlider").addEventListener("input", function (e) {
   let gain1Value = (this.value);
   document.querySelector("#gainOutput").innerHTML = (gain1Value*100).toFixed(0) + " %";
   Osc1Gain.gain.value = gain1Value;
+  //lfoGain.gain.value = gain1Value;
 });
 
 // Slider für LFO für Oszillator 1
@@ -335,6 +336,7 @@ function controlChange(channel, value) {
 
     document.querySelector("#gainOutput").innerHTML = (value*100).toFixed(0) + " %";
     Osc1Gain.gain.value = value;
+
   }
 
   // Oszi 1 LFO (SOUND_CONTROLLER_2)

@@ -72,7 +72,7 @@ function onMIDIMessage(event) {
         break;
     case 176:
         // your function controlChange(controllerNr, value)
-        //console.log('midi CC: ', event.data[1], event.data[2])
+        console.log('midi CC: ', event.data[1], event.data[2])
         controlChange(event.data[1], event.data[2]);
         break;
     case 224:
