@@ -59,6 +59,12 @@ html, body {
     color: var(--black-30);
 }
 
+.white.active{
+  box-shadow: -1px 0 0 hsl(39, 25%, 65%) inset, 0 0 5px hsl(0, 0%, 80%) inset,
+  0 0 3px var(--black-20);
+  background: linear-gradient(to bottom, hsl(0, 0%, 93%) 10%, hsl(42, 6%, 59%) 100%);
+}
+
 
 .black {
     height: 13.3rem;
@@ -71,6 +77,12 @@ html, body {
       0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
     background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%);
     color: var(--white-50);
+}
+
+.black.active {
+  box-shadow: -1px -1px 2px var(--white-20) inset,
+    0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
+  background: linear-gradient(45deg, hsl(0, 0%, 46%) 0%, hsl(0, 0%, 33%) 100%);
 }
 
 .offset {
@@ -115,7 +127,7 @@ html, body {
     cursor: pointer;
   }
   
-  .waveform:hover, .active {
+  .waveform:hover, .waveform.active {
     background: rgba(255,255,255,0.2);
   }
 
@@ -129,7 +141,7 @@ html, body {
     cursor: pointer;
   }
   
-  .waveform2:hover, .active {
+  .waveform2:hover, .waveform2.active {
     background: rgba(255,255,255,0.2);
   }
       
@@ -189,29 +201,29 @@ html, body {
   .pitch input{
     width: 330px;
   }
-  .bend{
+  .reverbfader{
     position: fixed;
-    top: 535px;
+    top: 543px;
     left: -36px;
     transform:rotate(-90deg);
     font-weight: bold;
     font-size: 0.45cm;
    
   }
-    #bendOutput{
-      position: fixed;
-      top: 520px;
-      left: 170px;
-      font-weight: bold;
-      font-size: 0.45cm;
+  #reverbfaderOutput{
+    position: fixed;
+    top: 520px;
+    left: 178px;
+    font-weight: bold;
+    font-size: 0.45cm;
   }
-  .bend input{
+  .reverbfader input{
     width: 330px;
   }
   .mainGain{
     position: fixed;
     top: 535px;
-    left: 60px;
+    left: 65px;
     transform:rotate(-90deg);
     font-weight: bold;
     font-size: 0.45cm;
@@ -219,7 +231,7 @@ html, body {
     #mainGainOutput{
     position: fixed;
     top: 520px;
-    left: 260px;
+    left: 268px;
     font-weight: bold;
     font-size: 0.45cm;
   }
@@ -306,7 +318,7 @@ html, body {
     cursor: pointer;
   }
   
-  .distortionReverb:hover {
+  .distortionReverb:hover, .distortionReverb.active {
     background: rgba(0,255,255,0.4);
   }
   

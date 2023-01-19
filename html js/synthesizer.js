@@ -1,47 +1,68 @@
 const context = new AudioContext();
 let Osc1Gain = context.createGain();
 let Osc2Gain = context.createGain();
-let preMainGain = context.createGai();
+let reverbBypassGain = context.createGain();
 let masterGain = context.createGain();
 let lfo = context.createOscillator();
 let lfoGain = context.createGain();
 let lfo2 = context.createOscillator();
 let lfoGain2 = context.createGain();
 
+// Reverb
 let reverb = context.createConvolver();
 let stateReverb = false;
 let reverbGain = context.createGain();
 reverbGain.gain.value = 0;
+reverbBypassGain.gain.value = 1;
 loadImpulseResponse("room");
 
+// Distortion
 let distortion = context.createWaveShaper();
 let stateDistortion = false;
 
+//OSCI
+const waveform = document.getElementsByClassName("waveform");
+const waveform2 = document.getElementsByClassName("waveform2");
 let currentWaveform1 = "sine";
 let currentWaveform2 = "sine";
-
 const oscillators1 = [];
 const oscillators2 = []; 
+const osciGains1 = [];
+const osciGains2 = [];
+let detuneOsci2Cent = 100;
 
+// LFO
 lfo.frequency.value = 6;
-lfoGain.gain.value = 0.5;
+lfoGain.gain.value = 0.2;
 lfo.start(context.currentTime);
 lfo.connect(lfoGain);
 
 lfo2.frequency.value = 6;
-lfoGain2.gain.value = 0.5;
+lfoGain2.gain.value = 0.2;
 lfo2.start(context.currentTime);
-lfo2.connect(lfoGain);
+lfo2.connect(lfoGain2);
 
 masterGain.gain.value = 0.3; 
+
+// Audiograph
+lfoGain.connect(Osc1Gain.gain);
+lfoGain2.connect(Osc2Gain.gain);
+Osc1Gain.connect(distortion);
+Osc2Gain.connect(distortion);
+distortion.connect(reverb);
+distortion.connect(reverbBypassGain);
+reverbBypassGain.connect(masterGain);
+
+reverb.connect(reverbGain);
+reverbGain.connect(masterGain);
+
 masterGain.connect(context.destination);
 
+const keys = document.getElementsByClassName("key");
 let noteFreq = null;
 
 
-const keys = document.getElementsByClassName("key");
-const waveform = document.getElementsByClassName("waveform");
-const waveform2 = document.getElementsByClassName("waveform2");
+
 
 function createNoteTable() {
     const noteFreq = [];
@@ -151,60 +172,70 @@ noteFreq = createNoteTable();
 document.querySelector("#Distortion").addEventListener("click", function(e) {
   if(stateDistortion == false) {
     stateDistortion = true;
-    distortionOn();
+    distortionOn(this.id);
+    //this.classList.add('active')
   } else {
     stateDistortion = false;
-    distortionOff();
+    distortionOff(this.id);
+    //this.classList.remove('active')
   }
 });
 
-function distortionOn(){
-  distortion.curve = makeDistortionCurve(100);
+function distortionOn(elemntID){
+  distortion.curve = makeDistortionCurve(250);
+  document.getElementById(elemntID).classList.add('active');
 }
 
-function distortionOff(){
+function distortionOff(elemntID){
   distortion.curve = makeDistortionCurve(0);
+  document.getElementById(elemntID).classList.remove('active');
 }
 
 // Reverb On oder Off
 document.querySelector("#Reverb").addEventListener("click", function(e) {
   if(stateReverb == false) {
     stateReverb = true;
-    reverbOn();
+    reverbOn(this.id);
+    //this.classList.add('active')
   } else {
     stateReverb = false;
-    reverbOff();
+    reverbOff(this.id);
+    //this.classList.remove('active')
   }
 });
 
-function reverbOn(){
+function reverbOn(elemntID){
   reverbGain.gain.value = 1;
-  preMainGain.gain.value = 0;
+  reverbBypassGain.gain.value = 0;
+  document.getElementById(elemntID).classList.add('active');
 }
 
-function reverbOff(){
+function reverbOff(elemntID){
   reverbGain.gain.value = 0;
-  preMainGain.gain.value = 1;
+  reverbBypassGain.gain.value = 1;
+  document.getElementById(elemntID).classList.remove('active');
 }
 
 
 // Ton-Ausgabe bei Tastendruck
 for (let i = 0; i < keys.length; i++) {
   console.log(keys[i].getAttribute("octave"), keys[i].id);
-  keys[i].addEventListener("mousedown", function() {startNote(keys[i].getAttribute("octave"), i, keys[i].id)});
-  keys[i].addEventListener("mouseup", function() {stopNote(keys[i].getAttribute("octave"), i, keys[i].id)});
+  keys[i].addEventListener("mousedown", function() {startNote(keys[i].getAttribute("octave"), i, keys[i].name, keys[i].id)});
+  keys[i].addEventListener("mouseup", function() {stopNote(keys[i].getAttribute("octave"), i, keys[i].name ,keys[i].id)});
 }
 
 //Auswahl Waveform für Oszillator 1
 for (let i = 0; i < waveform.length; i++) {
   console.log(waveform[i].id);
-  waveform[i].addEventListener("click", function() {getWaveformOszi1(waveform[i])});
+  waveform[i].addEventListener("click", function() {setWaveformOszi1(waveform[i])});
 }
 
-function getWaveformOszi1(selectedWaveformElement) {
+function setWaveformOszi1(selectedWaveformElement) {
   waveformName = selectedWaveformElement.name
   console.log('Oszi 1: ', waveformName);
   currentWaveform1 = waveformName;
+
+  // visual Feedback
   for (let i = 0; i < waveform.length; i++) {
     waveform[i].classList.remove('active');
   }
@@ -212,12 +243,11 @@ function getWaveformOszi1(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 1
-Osc1Gain.connect(reverb);
 document.querySelector("#gainSlider").addEventListener("input", function (e) {
   let gain1Value = (this.value);
   document.querySelector("#gainOutput").innerHTML = (gain1Value*100).toFixed(0) + " %";
   Osc1Gain.gain.value = gain1Value;
-  //lfoGain.gain.value = gain1Value;
+  lfoGain.gain.value = mapValue(gain1Value, 0, 1, 0, 0.4);
 });
 
 // Slider für LFO für Oszillator 1
@@ -229,13 +259,15 @@ document.querySelector("#lfoSlider").addEventListener("input", function(e){
 //Auswahl Waveform für Oszillator 2
 for (let i = 0; i < waveform2.length; i++) {
   console.log(waveform2[i].id);
-  waveform2[i].addEventListener("click", function() {getWaveformOszi2(waveform2[i])});
+  waveform2[i].addEventListener("click", function() {setWaveformOszi2(waveform2[i])});
 }
 
-function getWaveformOszi2(selectedWaveformElement) {
+function setWaveformOszi2(selectedWaveformElement) {
   waveformName = selectedWaveformElement.name
   console.log('Oszi 2: ', waveformName);
   currentWaveform2 = waveformName;
+
+  // visual Feedback
   for (let i = 0; i < waveform2.length; i++) {
     waveform2[i].classList.remove('active');
   }
@@ -243,11 +275,11 @@ function getWaveformOszi2(selectedWaveformElement) {
 }
 
 // Slider für Gain für Oszillator 2
-Osc2Gain.connect(reverb);
 document.querySelector("#gainSlider2").addEventListener("input", function (e) {
   let gain2Value = (this.value);
   document.querySelector("#gainOutput2").innerHTML = (gain2Value*100).toFixed(0) + " %";
   Osc2Gain.gain.value = gain2Value;
+  lfoGain2.gain.value = mapValue(gain2Value, 0, 1, 0, 0.4);
 });
 
 // Slider für LFO für Oszillator 2
@@ -263,30 +295,83 @@ document.querySelector("#mainGainSlider").addEventListener("input", function (e)
   masterGain.gain.value = masterGainValue;
 });
 
-function startNote(octave, note, name) {
-  
-  oscillators1[note] = context.createOscillator();
-  oscillators1[note].frequency.value = noteFreq[octave][name];
-  lfoGain.connect(Osc1Gain.gain);
-  oscillators1[note].type = currentWaveform1;
-  oscillators1[note].connect(Osc1Gain);
-  oscillators1[note].start(context.currentTime);
+// Rerverb-Slider
+document.querySelector("#reverbSlider").addEventListener("input", function (e) {
+  let reverbGainValue = (this.value);
+  document.querySelector("#reverbfaderOutput").innerHTML = (reverbGainValue*100).toFixed(0) + " %";
+  reverbGain.gain.value = reverbGainValue;
+  reverbBypassGain.gain.value = 1-reverbGainValue;
+});
 
-  oscillators2[note] = context.createOscillator();
-  oscillators2[note].frequency.value = noteFreq[octave][name];
-  oscillators2[note].detune.value = 2;
-  lfoGain2.connect(Osc2Gain.gain);
-  oscillators2[note].type = currentWaveform2;
-  oscillators2[note].connect(Osc2Gain);
-  oscillators2[note].start(context.currentTime);
+// Pitch-Slider
+document.querySelector('#pitchSlider').addEventListener('input', function(e) {
+  let pitchValue = this.value;
+  document.querySelector('#pitchOutput').innerHTML = (pitchValue*100).toFixed(0) + ' %';
+  pitch(pitchValue);
+})
+
+function pitch(value){
+  value = mapValue(value, 0, 1, -1200, 1200);
+  console.log(value);
+  for (let i = 0; i < oscillators1.length; i++ ) {
+    try {
+      oscillators1[i].detune.setValueAtTime(value, context.currentTime + 0.1);
+    } catch(error){
+      //console.log(error);
+    }
+  }
+
+  for (let i = 0; i < oscillators2.length; i++ ) {
+    try {
+      oscillators2[i].detune.setValueAtTime(value+detuneOsci2Cent, context.currentTime + 0.1);
+    } catch(error){
+      //console.log(error);
+    }
+  }
 }
 
-function stopNote(octave, note, name) {
-  Osc1Gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
-  Osc2Gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
-  masterGain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
-  oscillators1[note].stop(context.currentTime + 0.05);
-  oscillators2[note].stop(context.currentTime + 0.05);
+function startNote(octave, keyNumber, noteName, idName) {
+  gain1Value = document.querySelector("#gainSlider").value;
+  gain2Value = document.querySelector("#gainSlider2").value;
+
+  // Osci 1
+  osciGains1[keyNumber] = context.createGain();
+  oscillators1[keyNumber] = context.createOscillator();
+  oscillators1[keyNumber].frequency.value = noteFreq[octave][noteName];
+  oscillators1[keyNumber].type = currentWaveform1;
+
+  oscillators1[keyNumber].connect(osciGains1[keyNumber]);
+
+  osciGains1[keyNumber].connect(Osc1Gain);
+
+  // Osci 2
+  osciGains2[keyNumber] = context.createGain();
+  oscillators2[keyNumber] = context.createOscillator();
+  oscillators2[keyNumber].frequency.value = noteFreq[octave][noteName];
+  oscillators2[keyNumber].type = currentWaveform2;
+
+  oscillators1[keyNumber].connect(osciGains1[keyNumber]);
+  oscillators2[keyNumber].connect(Osc2Gain);
+
+  // pitch and play
+  pitch(document.querySelector('#pitchSlider').value);
+  oscillators1[keyNumber].start(context.currentTime+0.1);
+  oscillators2[keyNumber].start(context.currentTime+0.1);
+  osciGains1[keyNumber].gain.linearRampToValueAtTime(gain1Value, context.currentTime + 0.2);
+  osciGains2[keyNumber].gain.linearRampToValueAtTime(gain1Value, context.currentTime + 0.2);
+  //lfoGain.gain.linearRampToValueAtTime(gain2Value, context.currentTime + 0.3);
+
+  document.getElementById(idName).classList.add('active')
+}
+
+function stopNote(octave, keyNumber, noteName, idName) {
+  osciGains1[keyNumber].gain.linearRampToValueAtTime(0, context.currentTime + 0.1);
+  //lfoGain.gain.linearRampToValueAtTime(0, context.currentTime + 0.3);
+  //masterGain.gain.linearRampToValueAtTime(0, context.currentTime + 0.003);
+  oscillators1[keyNumber].stop(context.currentTime + 0.3);
+  oscillators2[keyNumber].stop(context.currentTime + 0.3);
+
+  document.getElementById(idName).classList.remove('active')
 }
 
 // MIDI FUNKTIONEN
@@ -301,19 +386,19 @@ function controlChange(channel, value) {
     value = mapValue(value, 0, 127, 1, 0)
     console.log('Pitch: ', value);
     document.querySelector("#pitchSlider").value = value;
-
-    document.querySelector("#pitchSlider").innerHTML = (value*100).toFixed(0) + " %";
-    //masterGain.gain.value = value;
+    document.querySelector("#pitchOutput").innerHTML = (value*100).toFixed(0) + " %";
+    pitch(value);
   }
 
-  // Bend (EXPRESSION)
-  if (channel == 11){
+  // Reverb (EFFECT_CONTROL_1)
+  if (channel == 12){
     value = mapValue(value, 0, 127, 1, 0)
-    console.log('Bend: ', value);
-    document.querySelector("#bendSlider").value = value;
+    console.log('Reverb: ', value);
+    document.querySelector("#reverbSlider").value = value;
 
-    document.querySelector("#bendSlider").innerHTML = (value*100).toFixed(0) + " %";
-    //masterGain.gain.value = value;
+    document.querySelector("#reverbSlider").innerHTML = (value*100).toFixed(0) + " %";
+    reverbGain.gain.value = value;
+    reverbBypassGain.gain1Value = 1-value;
   }
 
   // Main Gain (VOLUME)
@@ -440,9 +525,11 @@ function controlChange(channel, value) {
   if (channel == 91){   
     if (value <= 63) {   // off (0..63)
       console.log('Distortion off')
+      distortionOff('Distortion');
     }
     else if (value <= 127) {   // on (64..127)
       console.log('Distortion on')
+      distortionOn('Distortion');
     }
   }
 
@@ -451,9 +538,11 @@ function controlChange(channel, value) {
   if (channel == 92){   
     if (value <= 63) {   // off (0..63)
       console.log('Reverb off')
+      reverbOff('Reverb');
     }
     else if (value <= 127) {   // on (64..127)
       console.log('Reverb on')
+      reverbOn('Reverb');
     }
   }
 

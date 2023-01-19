@@ -1,16 +1,16 @@
 function loadImpulseResponse(name) {
-    fetch("/impulseResponses/" + name + ".wav")
+    fetch("./impulseResponses/" + name + ".wav")
         .then(response => response.arrayBuffer())
         .then(undecodedAudio => context.decodeAudioData(undecodedAudio))
         .then(audioBuffer => {
-            if (convoler) {convoler.disconnect();}
+            //if (reverb) {reverb.disconnect();}
 
-            convoler = context.createConvolver();
-            convoler.buffer = audioBuffer;
-            convoler.normalize = true;
+            //reverb = context.createConvolver();
+            reverb.buffer = audioBuffer;
+            reverb.normalize = true;
 
-            source.connect(convoler);
-            convoler.connect(masterGain);
+            //source.connect(reverb);
+            //reverb.connect(masterGain);
         })
         .catch(console.error);
 }
