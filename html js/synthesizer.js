@@ -1,3 +1,4 @@
+// Erstellung der Audio Nodes
 const context = new AudioContext();
 let Osc1Gain = context.createGain();
 let Osc2Gain = context.createGain();
@@ -63,7 +64,7 @@ let noteFreq = null;
 
 
 
-
+// Funktion zur Erstellung und späteren Zuweisung der Noten und Frequenzen
 function createNoteTable() {
     const noteFreq = [];
     for (let i = 0; i < 9; i++) {
@@ -310,9 +311,12 @@ document.querySelector('#pitchSlider').addEventListener('input', function(e) {
   pitch(pitchValue);
 })
 
+// Pitch-Bend Slider
 function pitch(value){
   value = mapValue(value, 0, 1, -1200, 1200);
   console.log(value);
+
+  // Pitch für aktiven Oscillator 1
   for (let i = 0; i < oscillators1.length; i++ ) {
     try {
       oscillators1[i].detune.setValueAtTime(value, context.currentTime + 0.1);
@@ -321,6 +325,7 @@ function pitch(value){
     }
   }
 
+  // Pitch für aktiven Oscillator 2
   for (let i = 0; i < oscillators2.length; i++ ) {
     try {
       oscillators2[i].detune.setValueAtTime(value+detuneOsci2Cent, context.currentTime + 0.1);
