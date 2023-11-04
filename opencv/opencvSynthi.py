@@ -11,7 +11,7 @@ import json
 imgWidth = 1280
 imgHeight = 720
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, imgWidth)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, imgHeight)
 
